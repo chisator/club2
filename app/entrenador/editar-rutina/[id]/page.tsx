@@ -2,7 +2,11 @@ import { createClient } from "@/lib/server"
 import { redirect } from "next/navigation"
 import { EditRoutineForm } from "@/components/edit-routine-form"
 
-export default async function EditRoutinePage({ params }: { params: { id: string } }) {
+type PageProps = {
+  params: { id: string }
+}
+
+export default async function EditRoutinePage({ params }: PageProps) {
   const supabase = await createClient()
 
   const {
