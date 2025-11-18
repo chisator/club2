@@ -159,7 +159,7 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
       return { error: "No tienes permisos para exportar rutinas" }
     }
 
-    // Obtener rutina y asignaciones
+    // Obtener rutina
     const { data: routine, error: routineErr } = await supabase
       .from("routines")
       .select("*")
@@ -171,49 +171,23 @@ export async function exportRoutine(routineId: string, format: "json" | "csv") {
       return { error: "Rutina no encontrada o sin permisos" }
     }
 
-    // Obtener usuarios asignados
-    const { data: assignments } = await supabase
-      .from("routine_user_assignments")
-      .select("user_id")
-      .eq("routine_id", routineId)
-
-    const userIds = assignments?.map((a: any) => a.user_id) || []
-
-    // Obtener nombres de usuarios
-    const { data: users } = userIds.length
-      ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
-      : { data: [] }
-
-    const userData = users || []
+    const exercises = routine.exercises || []
 
     if (format === "json") {
-      const exportData = {
-        routine: {
-          title: routine.title,
-          description: routine.description,
-          start_date: routine.start_date,
-          end_date: routine.end_date,
-          exercises: routine.exercises,
-        },
-        assigned_users: userData.map((u: any) => ({ id: u.id, name: u.full_name })),
-      }
-      return { success: true, data: JSON.stringify(exportData, null, 2), filename: `${routine.title}.json` }
+      // Exportar solo los ejercicios como array
+      return { success: true, data: JSON.stringify(exercises, null, 2), filename: `${routine.title}-ejercicios.json` }
     }
 
     if (format === "csv") {
-      let csv = "Titulo,Descripción,Fecha Inicio,Fecha Fin\n"
-      csv += `"${routine.title}","${routine.description || ""}","${routine.start_date}","${routine.end_date}"\n\n`
-      csv += "Ejercicios\n"
-      csv += "Nombre,Series,Repeticiones,Duracion,Notas\n"
-      routine.exercises?.forEach((ex: any) => {
-        csv += `"${ex.name}","${ex.sets || ""}","${ex.reps || ""}","${ex.duration || ""}","${ex.notes || ""}"\n`
+      // Exportar solo ejercicios en CSV con encabezados
+      let csv = "name,sets,reps,weight,rest,notes\n"
+      exercises.forEach((ex: any) => {
+        const weight = ex.weight || ""
+        const rest = ex.rest || ""
+        const notes = (ex.notes || "").replace(/"/g, '""') // Escapar comillas
+        csv += `"${ex.name}","${ex.sets || ""}","${ex.reps || ""}","${weight}","${rest}","${notes}"\n`
       })
-      csv += "\nUsuarios Asignados\n"
-      csv += "Nombre\n"
-      userData.forEach((u: any) => {
-        csv += `"${u.full_name}"\n`
-      })
-      return { success: true, data: csv, filename: `${routine.title}.csv` }
+      return { success: true, data: csv, filename: `${routine.title}-ejercicios.csv` }
     }
 
     return { error: "Formato no soportado" }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import * as XLSX from "xlsx"
 
 interface Exercise {
   name: string
@@ -26,6 +27,41 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const parseExcelFile = (arrayBuffer: ArrayBuffer): Exercise[] => {
+    const workbook = XLSX.read(arrayBuffer, { type: "array" })
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][]
+
+    if (data.length < 2) {
+      throw new Error("El archivo Excel debe contener al menos un ejercicio")
+    }
+
+    const headers = (data[0] || []).map((h) => String(h).toLowerCase().trim())
+    const nameIdx = headers.indexOf("name") >= 0 ? headers.indexOf("name") : 0
+    const setsIdx = headers.indexOf("sets") >= 0 ? headers.indexOf("sets") : 1
+    const repsIdx = headers.indexOf("reps") >= 0 ? headers.indexOf("reps") : 2
+    const weightIdx = headers.indexOf("weight")
+    const restIdx = headers.indexOf("rest")
+    const notesIdx = headers.indexOf("notes")
+
+    const exercises: Exercise[] = []
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i] || []
+      if (row[nameIdx]) {
+        exercises.push({
+          name: String(row[nameIdx]).trim(),
+          sets: String(row[setsIdx] || "3").trim(),
+          reps: String(row[repsIdx] || "10").trim(),
+          weight: weightIdx >= 0 && row[weightIdx] ? parseFloat(String(row[weightIdx])) : undefined,
+          rest: restIdx >= 0 && row[restIdx] ? parseInt(String(row[restIdx])) : undefined,
+          notes: notesIdx >= 0 && row[notesIdx] ? String(row[notesIdx]).trim() : undefined,
+        })
+      }
+    }
+
+    return exercises
+  }
+
   const handleImport = async () => {
     if (!file) {
       setError("Selecciona un archivo")
@@ -35,14 +71,15 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
     setIsLoading(true)
     setError(null)
     try {
-      const fileContent = await file.text()
       let exercises: Exercise[] = []
 
       if (file.name.endsWith(".json")) {
+        const fileContent = await file.text()
         const data = JSON.parse(fileContent)
         exercises = Array.isArray(data) ? data : data.routine?.exercises || data.exercises || []
       } else if (file.name.endsWith(".csv")) {
         // Parse CSV: Headers must be: name,sets,reps,weight,rest,notes
+        const fileContent = await file.text()
         const lines = fileContent.split("\n").filter((line) => line.trim())
         if (lines.length < 2) {
           setError("El archivo CSV debe contener al menos un ejercicio")
@@ -71,8 +108,11 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
             })
           }
         }
+      } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        const arrayBuffer = await file.arrayBuffer()
+        exercises = parseExcelFile(arrayBuffer)
       } else {
-        setError("Formato no soportado (solo JSON o CSV)")
+        setError("Formato no soportado (JSON, CSV o Excel)")
         setIsLoading(false)
         return
       }
@@ -98,16 +138,16 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Importar Ejercicios</DialogTitle>
-          <DialogDescription>Carga ejercicios desde un archivo JSON o CSV existente</DialogDescription>
+          <DialogDescription>Carga ejercicios desde un archivo JSON, CSV o Excel existente</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="exerciseFile">Archivo (JSON o CSV)</Label>
+            <Label htmlFor="exerciseFile">Archivo (JSON, CSV o Excel)</Label>
             <Input
               id="exerciseFile"
               type="file"
-              accept=".json,.csv"
+              accept=".json,.csv,.xlsx,.xls"
               onChange={(e) => {
                 setFile(e.target.files?.[0] || null)
                 setError(null)
@@ -118,6 +158,8 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
               JSON: Array de ejercicios o {"{ routine: { exercises: [...] } }"}
               <br />
               CSV: name, sets, reps, weight (opt), rest (opt), notes (opt)
+              <br />
+              Excel: Primeras columnas: name, sets, reps (opcionales: weight, rest, notes)
             </p>
           </div>
 
