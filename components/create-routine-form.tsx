@@ -21,18 +21,18 @@ interface Exercise {
 }
 
 interface CreateRoutineFormProps {
-  sports: any[]
+  athletes: any[]
   trainerId: string
 }
 
-export function CreateRoutineForm({ sports, trainerId }: CreateRoutineFormProps) {
+export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [sportId, setSportId] = useState("")
+  const [userId, setUserId] = useState("")
   const [scheduledDate, setScheduledDate] = useState("")
   const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", duration: "", notes: "" }])
 
@@ -64,7 +64,7 @@ export function CreateRoutineForm({ sports, trainerId }: CreateRoutineFormProps)
       const { error: insertError } = await supabase.from("routines").insert({
         title,
         description,
-        sport_id: sportId,
+        user_id: userId,
         trainer_id: trainerId,
         scheduled_date: scheduledDate,
         exercises: validExercises,
@@ -112,15 +112,15 @@ export function CreateRoutineForm({ sports, trainerId }: CreateRoutineFormProps)
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="sport">Deporte</Label>
-            <Select value={sportId} onValueChange={setSportId} required>
+            <Label htmlFor="user">Usuario Deportista</Label>
+            <Select value={userId} onValueChange={setUserId} required>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un deporte" />
+                <SelectValue placeholder="Selecciona un usuario" />
               </SelectTrigger>
               <SelectContent>
-                {sports.map((sport) => (
-                  <SelectItem key={sport.id} value={sport.id}>
-                    {sport.name}
+                {athletes.map((athlete) => (
+                  <SelectItem key={athlete.id} value={athlete.id}>
+                    {athlete.full_name} ({athlete.email})
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -70,13 +70,13 @@ export async function createUser(formData: {
   }
 }
 
-export async function createSport(formData: { name: string; description: string }) {
+export async function assignUserToTrainer(formData: { userId: string; trainerId: string }) {
   try {
     const supabase = await createServerClient()
 
-    const { error } = await supabase.from("sports").insert({
-      name: formData.name,
-      description: formData.description,
+    const { error } = await supabase.from("trainer_user_assignments").insert({
+      user_id: formData.userId,
+      trainer_id: formData.trainerId,
     })
 
     if (error) {
@@ -86,18 +86,19 @@ export async function createSport(formData: { name: string; description: string 
     revalidatePath("/admin")
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || "Error al crear deporte" }
+    return { error: error.message || "Error al asignar usuario" }
   }
 }
 
-export async function assignAthleteToSport(formData: { athleteId: string; sportId: string }) {
+export async function removeUserFromTrainer(formData: { userId: string; trainerId: string }) {
   try {
     const supabase = await createServerClient()
 
-    const { error } = await supabase.from("athlete_sports").insert({
-      athlete_id: formData.athleteId,
-      sport_id: formData.sportId,
-    })
+    const { error } = await supabase
+      .from("trainer_user_assignments")
+      .delete()
+      .eq("user_id", formData.userId)
+      .eq("trainer_id", formData.trainerId)
 
     if (error) {
       return { error: error.message }
@@ -106,7 +107,7 @@ export async function assignAthleteToSport(formData: { athleteId: string; sportI
     revalidatePath("/admin")
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || "Error al asignar deportista" }
+    return { error: error.message || "Error al desasignar usuario" }
   }
 }
 

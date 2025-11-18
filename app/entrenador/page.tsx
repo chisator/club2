@@ -27,19 +27,9 @@ export default async function EntrenadorPage() {
   // Obtener rutinas del entrenador
   const { data: routines } = await supabase
     .from("routines")
-    .select(
-      `
-      *,
-      sports (
-        name
-      )
-    `,
-    )
+    .select("*")
     .eq("trainer_id", user.id)
     .order("scheduled_date", { ascending: false })
-
-  // Obtener deportes disponibles
-  const { data: sports } = await supabase.from("sports").select("*").order("name")
 
   // Calcular estadísticas
   const totalRoutines = routines?.length || 0
@@ -76,7 +66,7 @@ export default async function EntrenadorPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold">Club Deportivo</h1>
+              <h1 className="text-lg font-bold">Gimnasio</h1>
               <p className="text-xs text-muted-foreground">Panel de Entrenador</p>
             </div>
           </div>
@@ -96,7 +86,7 @@ export default async function EntrenadorPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold text-balance">Bienvenido, {profile?.full_name}</h2>
-            <p className="text-muted-foreground mt-1">Gestiona tus rutinas y entrena a tus deportistas</p>
+            <p className="text-muted-foreground mt-1">Gestiona tus rutinas de entrenamiento</p>
           </div>
           <Button asChild size="lg">
             <Link href="/entrenador/crear-rutina">
@@ -145,13 +135,19 @@ export default async function EntrenadorPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Deportes</CardTitle>
+              <CardTitle className="text-sm font-medium">Usuarios Asignados</CardTitle>
               <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20a9 9 0 0118 0v-2a9 9 0 00-18 0v2z"
+                />
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{sports?.length || 0}</div>
+              <div className="text-3xl font-bold">-</div>
+              <p className="text-xs text-muted-foreground">Gestiona desde administración</p>
             </CardContent>
           </Card>
         </div>

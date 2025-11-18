@@ -20,7 +20,7 @@ export default async function EditRoutinePage({ params }: PageProps) {
   // Obtener la rutina
   const { data: routine, error } = await supabase
     .from("routines")
-    .select("*, sports(id, name)")
+    .select("*")
     .eq("id", params.id)
     .eq("trainer_id", user.id)
     .single()
@@ -29,8 +29,18 @@ export default async function EditRoutinePage({ params }: PageProps) {
     redirect("/entrenador")
   }
 
-  // Obtener deportes disponibles
-  const { data: sports } = await supabase.from("sports").select("*").order("name")
+  // Obtener usuarios asignados al entrenador
+  const { data: assignments } = await supabase
+    .from("trainer_user_assignments")
+    .select("user_id")
+    .eq("trainer_id", user.id)
+
+  const userIds = assignments?.map((a) => a.user_id) || []
+
+  // Obtener perfiles de esos usuarios
+  const { data: athletes } = userIds.length
+    ? await supabase.from("profiles").select("*").in("id", userIds).order("full_name")
+    : { data: [] }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -40,7 +50,7 @@ export default async function EditRoutinePage({ params }: PageProps) {
           <p className="text-muted-foreground mt-2">Actualiza los detalles de la rutina de entrenamiento</p>
         </div>
 
-        <EditRoutineForm routine={routine} sports={sports || []} />
+        <EditRoutineForm routine={routine} athletes={athletes || []} />
       </div>
     </div>
   )

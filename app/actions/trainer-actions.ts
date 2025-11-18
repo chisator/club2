@@ -7,7 +7,7 @@ export async function updateRoutine(formData: {
   routineId: string
   title: string
   description: string
-  sportId: string
+  userId: string
   scheduledDate: string
   exercises: any[]
 }) {
@@ -26,7 +26,7 @@ export async function updateRoutine(formData: {
       .update({
         title: formData.title,
         description: formData.description,
-        sport_id: formData.sportId,
+        user_id: formData.userId,
         scheduled_date: formData.scheduledDate,
         exercises: formData.exercises,
       })

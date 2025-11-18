@@ -14,17 +14,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface EditRoutineFormProps {
   routine: any
-  sports: any[]
+  athletes: any[]
 }
 
-export function EditRoutineForm({ routine, sports }: EditRoutineFormProps) {
+export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [title, setTitle] = useState(routine.title)
   const [description, setDescription] = useState(routine.description || "")
-  const [sportId, setSportId] = useState(routine.sport_id)
+  const [userId, setUserId] = useState(routine.user_id)
   const [scheduledDate, setScheduledDate] = useState(routine.scheduled_date.split("T")[0])
   const [exercises, setExercises] = useState(routine.exercises || [])
 
@@ -51,7 +51,7 @@ export function EditRoutineForm({ routine, sports }: EditRoutineFormProps) {
       routineId: routine.id,
       title,
       description,
-      sportId,
+      userId,
       scheduledDate,
       exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
     })
@@ -86,15 +86,15 @@ export function EditRoutineForm({ routine, sports }: EditRoutineFormProps) {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="sport">Deporte</Label>
-              <Select value={sportId} onValueChange={setSportId}>
+              <Label htmlFor="user">Usuario Deportista</Label>
+              <Select value={userId} onValueChange={setUserId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {sports.map((sport) => (
-                    <SelectItem key={sport.id} value={sport.id}>
-                      {sport.name}
+                  {athletes.map((athlete) => (
+                    <SelectItem key={athlete.id} value={athlete.id}>
+                      {athlete.full_name} ({athlete.email})
                     </SelectItem>
                   ))}
                 </SelectContent>

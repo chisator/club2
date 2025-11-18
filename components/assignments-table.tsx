@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { assignAthleteToSport } from "@/app/actions/admin-actions"
+import { assignUserToTrainer, removeUserFromTrainer } from "@/app/actions/admin-actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -21,27 +21,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface AssignmentsTableProps {
   assignments: any[]
   users: any[]
-  sports: any[]
 }
 
-export function AssignmentsTable({ assignments, users, sports }: AssignmentsTableProps) {
+export function AssignmentsTable({ assignments, users }: AssignmentsTableProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [athleteId, setAthleteId] = useState("")
-  const [sportId, setSportId] = useState("")
+  const [userId, setUserId] = useState("")
+  const [trainerId, setTrainerId] = useState("")
 
   const athletes = users.filter((u) => u.role === "deportista")
+  const trainers = users.filter((u) => u.role === "entrenador")
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
 
-    const result = await assignAthleteToSport({
-      athleteId,
-      sportId,
+    const result = await assignUserToTrainer({
+      userId,
+      trainerId,
     })
 
     if (result.error) {
@@ -51,8 +51,23 @@ export function AssignmentsTable({ assignments, users, sports }: AssignmentsTabl
     }
 
     setIsOpen(false)
-    setAthleteId("")
-    setSportId("")
+    setUserId("")
+    setTrainerId("")
+    setIsLoading(false)
+  }
+
+  const handleRemoveAssignment = async (userId: string, trainerId: string) => {
+    setIsLoading(true)
+    setError(null)
+
+    const result = await removeUserFromTrainer({
+      userId,
+      trainerId,
+    })
+
+    if (result.error) {
+      setError(result.error)
+    }
     setIsLoading(false)
   }
 
@@ -61,8 +76,8 @@ export function AssignmentsTable({ assignments, users, sports }: AssignmentsTabl
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Asignaciones Deportista-Deporte</CardTitle>
-            <CardDescription>Asigna deportistas a deportes específicos</CardDescription>
+            <CardTitle>Asignaciones Entrenador-Usuario</CardTitle>
+            <CardDescription>Asigna usuarios a entrenadores específicos</CardDescription>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -71,14 +86,14 @@ export function AssignmentsTable({ assignments, users, sports }: AssignmentsTabl
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Crear Nueva Asignación</DialogTitle>
-                <DialogDescription>Asigna un deportista a un deporte</DialogDescription>
+                <DialogDescription>Asigna un usuario a un entrenador</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateAssignment} className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="athlete">Deportista</Label>
-                  <Select value={athleteId} onValueChange={setAthleteId} required>
+                  <Label htmlFor="user">Usuario Deportista</Label>
+                  <Select value={userId} onValueChange={setUserId} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un deportista" />
+                      <SelectValue placeholder="Selecciona un usuario" />
                     </SelectTrigger>
                     <SelectContent>
                       {athletes.map((athlete) => (
@@ -91,15 +106,15 @@ export function AssignmentsTable({ assignments, users, sports }: AssignmentsTabl
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="sport">Deporte</Label>
-                  <Select value={sportId} onValueChange={setSportId} required>
+                  <Label htmlFor="trainer">Entrenador</Label>
+                  <Select value={trainerId} onValueChange={setTrainerId} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un deporte" />
+                      <SelectValue placeholder="Selecciona un entrenador" />
                     </SelectTrigger>
                     <SelectContent>
-                      {sports.map((sport) => (
-                        <SelectItem key={sport.id} value={sport.id}>
-                          {sport.name}
+                      {trainers.map((trainer) => (
+                        <SelectItem key={trainer.id} value={trainer.id}>
+                          {trainer.full_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -125,10 +140,11 @@ export function AssignmentsTable({ assignments, users, sports }: AssignmentsTabl
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Deportista</TableHead>
+              <TableHead>Usuario</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Deporte</TableHead>
+              <TableHead>Entrenador</TableHead>
               <TableHead>Fecha de Asignación</TableHead>
+              <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -136,8 +152,18 @@ export function AssignmentsTable({ assignments, users, sports }: AssignmentsTabl
               <TableRow key={assignment.id}>
                 <TableCell className="font-medium">{assignment.profiles?.full_name}</TableCell>
                 <TableCell>{assignment.profiles?.email}</TableCell>
-                <TableCell>{assignment.sports?.name}</TableCell>
+                <TableCell>{assignment.trainer?.full_name}</TableCell>
                 <TableCell>{new Date(assignment.created_at).toLocaleDateString("es-ES")}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveAssignment(assignment.user_id, assignment.trainer_id)}
+                    disabled={isLoading}
+                  >
+                    Remover
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

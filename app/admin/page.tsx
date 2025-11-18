@@ -28,21 +28,18 @@ export default async function AdminPage() {
   // Obtener todos los usuarios
   const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false })
 
-  // Obtener todos los deportes
-  const { data: sports } = await supabase.from("sports").select("*").order("name")
-
   // Obtener todas las asignaciones
   const { data: assignments } = await supabase
-    .from("athlete_sports")
+    .from("trainer_user_assignments")
     .select(
       `
       *,
-      profiles (
+      profiles:user_id (
         full_name,
         email
       ),
-      sports (
-        name
+      trainer:trainer_id (
+        full_name
       )
     `,
     )
@@ -55,7 +52,6 @@ export default async function AdminPage() {
   const totalUsers = users?.length || 0
   const totalAthletes = users?.filter((u) => u.role === "deportista").length || 0
   const totalTrainers = users?.filter((u) => u.role === "entrenador").length || 0
-  const totalSports = sports?.length || 0
   const totalRoutines = routines?.length || 0
 
   return (
@@ -80,7 +76,7 @@ export default async function AdminPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold">Club Deportivo</h1>
+              <h1 className="text-lg font-bold">Gimnasio</h1>
               <p className="text-xs text-muted-foreground">Panel de Administración</p>
             </div>
           </div>
@@ -99,7 +95,7 @@ export default async function AdminPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-balance">Panel de Administración</h2>
-          <p className="text-muted-foreground mt-1">Gestiona usuarios, deportes y asignaciones del club</p>
+          <p className="text-muted-foreground mt-1">Gestiona usuarios, rutinas y asignaciones del gimnasio</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-5 mb-8">
@@ -156,13 +152,18 @@ export default async function AdminPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Deportes</CardTitle>
+              <CardTitle className="text-sm font-medium">Asignaciones</CardTitle>
               <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{totalSports}</div>
+              <div className="text-3xl font-bold">{assignments?.length || 0}</div>
             </CardContent>
           </Card>
 
@@ -185,9 +186,8 @@ export default async function AdminPage() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="users">Usuarios</TabsTrigger>
-            <TabsTrigger value="sports">Deportes</TabsTrigger>
             <TabsTrigger value="assignments">Asignaciones</TabsTrigger>
           </TabsList>
 
@@ -195,12 +195,8 @@ export default async function AdminPage() {
             <UsersTable users={users || []} />
           </TabsContent>
 
-          <TabsContent value="sports">
-            <SportsTable sports={sports || []} />
-          </TabsContent>
-
           <TabsContent value="assignments">
-            <AssignmentsTable assignments={assignments || []} users={users || []} sports={sports || []} />
+            <AssignmentsTable assignments={assignments || []} users={users || []} />
           </TabsContent>
         </Tabs>
       </main>

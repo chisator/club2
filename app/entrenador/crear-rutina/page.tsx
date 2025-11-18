@@ -23,8 +23,18 @@ export default async function CrearRutinaPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener deportes disponibles
-  const { data: sports } = await supabase.from("sports").select("*").order("name")
+  // Obtener usuarios asignados al entrenador
+  const { data: assignments } = await supabase
+    .from("trainer_user_assignments")
+    .select("user_id")
+    .eq("trainer_id", user.id)
+
+  const userIds = assignments?.map((a) => a.user_id) || []
+
+  // Obtener perfiles de esos usuarios
+  const { data: athletes } = userIds.length
+    ? await supabase.from("profiles").select("*").in("id", userIds).order("full_name")
+    : { data: [] }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-gray-900 dark:to-gray-800">
@@ -42,7 +52,7 @@ export default async function CrearRutinaPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold">Club Deportivo</h1>
+              <h1 className="text-lg font-bold">Gimnasio</h1>
               <p className="text-xs text-muted-foreground">Panel de Entrenador</p>
             </div>
           </div>
@@ -64,10 +74,10 @@ export default async function CrearRutinaPage() {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-balance">Crear Nueva Rutina</h2>
-          <p className="text-muted-foreground mt-1">Define los ejercicios y programa la rutina para tus deportistas</p>
+          <p className="text-muted-foreground mt-1">Define los ejercicios y asigna la rutina a un usuario</p>
         </div>
 
-        <CreateRoutineForm sports={sports || []} trainerId={user.id} />
+        <CreateRoutineForm athletes={athletes || []} trainerId={user.id} />
       </main>
     </div>
   )
