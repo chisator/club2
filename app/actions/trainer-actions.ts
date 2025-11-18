@@ -238,12 +238,17 @@ export async function importRoutine(formData: {
         routine_id: inserted.id,
         user_id: uid,
       }))
-      const { error: assignErr } = await supabase.from("routine_user_assignments").insert(assignments)
+      const { data: insertedAssignments, error: assignErr } = await supabase
+        .from("routine_user_assignments")
+        .insert(assignments)
+        .select("id, routine_id, user_id")
       if (assignErr) return { error: assignErr.message }
     }
 
+    // Revalidate trainer and deportista pages so cached content updates
     revalidatePath("/entrenador")
-    return { success: true }
+    revalidatePath("/deportista")
+    return { success: true, routineId: inserted.id }
   } catch (error: any) {
     return { error: error.message || "Error al importar rutina" }
   }

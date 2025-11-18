@@ -108,6 +108,10 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
 
       if (result.error) throw new Error(result.error)
 
+      // show diagnostic info in console for debugging
+      console.log("Routine created:", result)
+
+      // Navigate back to trainer dashboard
       router.push("/entrenador")
       router.refresh()
     } catch (err: any) {
