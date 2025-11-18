@@ -15,17 +15,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface EditRoutineFormProps {
   routine: any
   athletes: any[]
+  assignedUserIds?: string[]
 }
 
-export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
+export function EditRoutineForm({ routine, athletes, assignedUserIds = [] }: EditRoutineFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [title, setTitle] = useState(routine.title)
   const [description, setDescription] = useState(routine.description || "")
-  const [userId, setUserId] = useState(routine.user_id)
-  const [scheduledDate, setScheduledDate] = useState(routine.scheduled_date.split("T")[0])
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(assignedUserIds || (routine.user_id ? [routine.user_id] : []))
+  const [startDate, setStartDate] = useState(
+    routine.start_date ? String(routine.start_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : ""
+  )
+  const [endDate, setEndDate] = useState(routine.end_date ? String(routine.end_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : "")
   const [exercises, setExercises] = useState(routine.exercises || [])
 
   const addExercise = () => {
@@ -47,9 +51,22 @@ export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
     setIsLoading(true)
     setError(null)
 
-    // Validar que se seleccionó un usuario
-    if (!userId) {
-      setError("Debes seleccionar un usuario")
+    // Validar que se seleccionó al menos un usuario
+    if (!selectedUserIds || selectedUserIds.length === 0) {
+      setError("Debes seleccionar al menos un usuario")
+      setIsLoading(false)
+      return
+    }
+
+    // Validar fechas
+    if (!startDate || !endDate) {
+      setError("Debes seleccionar fecha de inicio y fin")
+      setIsLoading(false)
+      return
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      setError("La fecha de inicio no puede ser posterior a la fecha de fin")
       setIsLoading(false)
       return
     }
@@ -58,8 +75,9 @@ export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
       routineId: routine.id,
       title,
       description,
-      userId,
-      scheduledDate,
+      userIds: selectedUserIds,
+      startDate,
+      endDate,
       exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
     })
 
@@ -93,19 +111,35 @@ export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="user">Usuario Deportista</Label>
-              <Select value={userId} onValueChange={setUserId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {athletes.map((athlete) => (
-                    <SelectItem key={athlete.id} value={athlete.id}>
-                      {athlete.full_name} ({athlete.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Usuarios Deportistas</Label>
+              <div className="grid gap-2">
+                {athletes.length === 0 && <p className="text-sm text-muted-foreground">No tienes usuarios asignados</p>}
+                {athletes.map((athlete) => (
+                  <label key={athlete.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedUserIds.includes(athlete.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedUserIds([...selectedUserIds, athlete.id])
+                        else setSelectedUserIds(selectedUserIds.filter((id) => id !== athlete.id))
+                      }}
+                      className="accent-emerald-600"
+                    />
+                    <span className="text-sm">{athlete.full_name} ({athlete.email})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="startDate">Fecha Inicio</Label>
+              <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="endDate">Fecha Fin</Label>
+              <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
             </div>
           </div>
 
@@ -117,17 +151,6 @@ export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="date">Fecha Programada</Label>
-            <Input
-              id="date"
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              required
             />
           </div>
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import Link from "next/link"
 import { deleteRoutine } from "@/app/actions/trainer-actions"
+import { RenewRoutineDialog } from "@/components/renew-routine-dialog"
 
 interface TrainerRoutineCardProps {
   routine: any
@@ -15,6 +16,7 @@ interface TrainerRoutineCardProps {
 export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCardProps) {
   const [showDetails, setShowDetails] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showRenewDialog, setShowRenewDialog] = useState(false)
 
   const exercises = Array.isArray(routine.exercises) ? routine.exercises : []
 
@@ -32,14 +34,17 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
     if (!confirm("¿Estás seguro de que deseas eliminar esta rutina? Esta acción no se puede deshacer.")) {
       return
     }
-
     setIsDeleting(true)
     const result = await deleteRoutine(routine.id)
 
     if (result.error) {
       alert(result.error)
       setIsDeleting(false)
+      return
     }
+
+    // eliminado correctamente
+    window.location.reload()
   }
 
   return (
@@ -52,7 +57,15 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
               <Badge variant="outline" className="mr-2">
                 {routine.sports?.name}
               </Badge>
-              <span className="text-xs">{formatDate(routine.scheduled_date)}</span>
+              <span className="text-xs">
+                {routine.start_date && routine.end_date
+                  ? `${formatDate(routine.start_date)} - ${formatDate(routine.end_date)}`
+                  : routine.end_date
+                  ? formatDate(routine.end_date)
+                  : routine.start_date
+                  ? formatDate(routine.start_date)
+                  : "Sin fecha"}
+              </span>
             </CardDescription>
           </div>
           {isPast && (
@@ -84,6 +97,9 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
               >
                 {isDeleting ? "Eliminando..." : "Eliminar"}
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowRenewDialog(true)} disabled={isDeleting}>
+                Renovar
+              </Button>
             </div>
           </div>
 
@@ -105,6 +121,13 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
           )}
         </div>
       </CardContent>
+
+      <RenewRoutineDialog
+        isOpen={showRenewDialog}
+        onOpenChange={setShowRenewDialog}
+        routineId={routine.id}
+        currentEndDate={routine.end_date}
+      />
     </Card>
   )
 }

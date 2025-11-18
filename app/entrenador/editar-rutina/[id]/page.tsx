@@ -36,6 +36,14 @@ export default async function EditRoutinePage({ params }: PageProps) {
     .eq("trainer_id", user.id)
 
   const userIds = assignments?.map((a) => a.user_id) || []
+  
+  // Obtener usuarios asignados a la rutina específica
+  const { data: routineAssignments } = await supabase
+    .from("routine_user_assignments")
+    .select("user_id")
+    .eq("routine_id", params.id)
+  
+  const assignedUserIds = routineAssignments?.map((a: any) => a.user_id) || []
 
   // Obtener perfiles de esos usuarios
   const { data: athletes } = userIds.length
@@ -50,7 +58,7 @@ export default async function EditRoutinePage({ params }: PageProps) {
           <p className="text-muted-foreground mt-2">Actualiza los detalles de la rutina de entrenamiento</p>
         </div>
 
-        <EditRoutineForm routine={routine} athletes={athletes || []} />
+        <EditRoutineForm routine={routine} athletes={athletes || []} assignedUserIds={assignedUserIds} />
       </div>
     </div>
   )

@@ -58,8 +58,24 @@ export async function createUser(formData: {
 
     console.log("[v0] User created successfully:", newUser.user?.id)
 
-    // El trigger handle_new_user creará automáticamente el perfil
-    // usando los datos de user_metadata
+    // Asegurar que el perfil se cree/actualice con el rol correcto.
+    // Algunos entornos pueden disparar el trigger antes de que user_metadata
+    // esté disponible en raw_user_meta_data, o los triggers pueden no detectar
+    // correctamente la metadata. Para garantizar consistencia, insertamos/actualizamos
+    // explícitamente el registro en `profiles` usando el cliente de servicio.
+    try {
+      await supabaseAdmin.from("profiles").upsert(
+        {
+          id: newUser.user?.id,
+          email: formData.email,
+          full_name: formData.fullName,
+          role: formData.role,
+        },
+        { onConflict: "id" },
+      )
+    } catch (e) {
+      console.log("[v0] Warning: could not upsert profile:", e)
+    }
 
     revalidatePath("/admin")
 

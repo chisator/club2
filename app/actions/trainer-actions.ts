@@ -7,8 +7,10 @@ export async function updateRoutine(formData: {
   routineId: string
   title: string
   description: string
-  userId: string
-  scheduledDate: string
+  // support multiple assigned users
+  userIds?: string[]
+  startDate?: string
+  endDate?: string
   exercises: any[]
 }) {
   try {
@@ -21,20 +23,34 @@ export async function updateRoutine(formData: {
       return { error: "No tienes permisos para actualizar rutinas" }
     }
 
-    const { error } = await supabase
-      .from("routines")
-      .update({
-        title: formData.title,
-        description: formData.description,
-        user_id: formData.userId,
-        scheduled_date: formData.scheduledDate,
-        exercises: formData.exercises,
-      })
+    const updatePayload: any = {
+      title: formData.title,
+      description: formData.description,
+      exercises: formData.exercises,
+    }
+
+    if (formData.startDate) updatePayload.start_date = new Date(formData.startDate).toISOString()
+    if (formData.endDate) updatePayload.end_date = new Date(formData.endDate).toISOString()
+
+    const { error: updateError } = await supabase.from("routines").update(updatePayload).eq("id", formData.routineId).eq("trainer_id", user.id)
       .eq("id", formData.routineId)
       .eq("trainer_id", user.id)
 
-    if (error) {
-      return { error: error.message }
+    if (updateError) {
+      return { error: updateError.message }
+    }
+
+    // Si vienen userIds, sincronizar las asignaciones en routine_user_assignments
+    if (formData.userIds) {
+      // Borrar asignaciones previas para esta rutina (el trainer propietario puede hacerlo por RLS)
+      const { error: delError } = await supabase.from("routine_user_assignments").delete().eq("routine_id", formData.routineId)
+      if (delError) return { error: delError.message }
+
+      if (formData.userIds.length > 0) {
+        const rows = formData.userIds.map((uid) => ({ routine_id: formData.routineId, user_id: uid }))
+        const { error: insError } = await supabase.from("routine_user_assignments").insert(rows)
+        if (insError) return { error: insError.message }
+      }
     }
 
     revalidatePath("/entrenador")
@@ -65,5 +81,69 @@ export async function deleteRoutine(routineId: string) {
     return { success: true }
   } catch (error: any) {
     return { error: error.message || "Error al eliminar rutina" }
+  }
+}
+
+export async function renewRoutine({
+  routineId,
+  months,
+  newEndDate,
+}: {
+  routineId: string
+  months?: number
+  newEndDate?: string
+}) {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.role !== "entrenador") {
+      return { error: "No tienes permisos para renovar la rutina" }
+    }
+
+    // Obtener rutina para validar propietario y fecha actual
+    const { data: routine, error: getErr } = await supabase
+      .from("routines")
+      .select("id, trainer_id, start_date, end_date")
+      .eq("id", routineId)
+      .eq("trainer_id", user.id)
+      .single()
+
+    if (getErr || !routine) {
+      return { error: getErr?.message || "Rutina no encontrada o sin permisos" }
+    }
+
+    let newEnd: Date | null = null
+
+    if (newEndDate) {
+      newEnd = new Date(newEndDate)
+    } else if (months && months > 0) {
+      // Baseamos la extensión en la fecha de fin actual si existe, o en hoy
+      const base = routine.end_date ? new Date(routine.end_date) : new Date()
+      // Si la fecha base ya pasó, empezamos desde hoy
+      const now = new Date()
+      const from = base < now ? now : base
+      newEnd = new Date(from)
+      newEnd.setMonth(newEnd.getMonth() + months)
+    } else {
+      return { error: "Indica meses a extender o una nueva fecha de fin" }
+    }
+
+    const { error: updateErr } = await supabase
+      .from("routines")
+      .update({ end_date: newEnd.toISOString() })
+      .eq("id", routineId)
+      .eq("trainer_id", user.id)
+
+    if (updateErr) {
+      return { error: updateErr.message }
+    }
+
+    revalidatePath("/entrenador")
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || "Error al renovar rutina" }
   }
 }

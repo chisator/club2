@@ -32,8 +32,9 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [userId, setUserId] = useState("")
-  const [scheduledDate, setScheduledDate] = useState("")
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", duration: "", notes: "" }])
 
   const addExercise = () => {
@@ -55,9 +56,22 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
     setIsLoading(true)
     setError(null)
 
-    // Validar que se seleccionó un usuario
-    if (!userId) {
-      setError("Debes seleccionar un usuario")
+    // Validar que se seleccionó al menos un usuario
+    if (!selectedUserIds || selectedUserIds.length === 0) {
+      setError("Debes seleccionar al menos un usuario")
+      setIsLoading(false)
+      return
+    }
+
+    // Validar fechas
+    if (!startDate || !endDate) {
+      setError("Debes seleccionar fecha de inicio y fin")
+      setIsLoading(false)
+      return
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      setError("La fecha de inicio no puede ser posterior a la fecha de fin")
       setIsLoading(false)
       return
     }
@@ -68,16 +82,25 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
       // Filtrar ejercicios vacíos
       const validExercises = exercises.filter((ex) => ex.name.trim() !== "")
 
-      const { error: insertError } = await supabase.from("routines").insert({
-        title,
-        description,
-        user_id: userId,
-        trainer_id: trainerId,
-        scheduled_date: scheduledDate,
-        exercises: validExercises,
-      })
+      const { data: inserted, error: insertError } = await supabase
+        .from("routines")
+        .insert({
+          title,
+          description,
+          trainer_id: trainerId,
+          start_date: startDate ? new Date(startDate).toISOString() : null,
+          end_date: endDate ? new Date(endDate).toISOString() : null,
+          exercises: validExercises,
+        })
+        .select("id")
+        .single()
 
-      if (insertError) throw insertError
+      if (insertError || !inserted) throw insertError || new Error("No se pudo crear la rutina")
+
+      // Insertar asignaciones múltiples
+      const assignments = selectedUserIds.map((uid) => ({ routine_id: inserted.id, user_id: uid }))
+      const { error: assignError } = await supabase.from("routine_user_assignments").insert(assignments)
+      if (assignError) throw assignError
 
       router.push("/entrenador")
       router.refresh()
@@ -119,30 +142,35 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="user">Usuario Deportista</Label>
-            <Select value={userId} onValueChange={setUserId} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un usuario" />
-              </SelectTrigger>
-              <SelectContent>
-                {athletes.map((athlete) => (
-                  <SelectItem key={athlete.id} value={athlete.id}>
-                    {athlete.full_name} ({athlete.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Usuarios Deportistas</Label>
+            <div className="grid gap-2">
+              {athletes.length === 0 && <p className="text-sm text-muted-foreground">No tienes usuarios asignados</p>}
+              {athletes.map((athlete) => (
+                <label key={athlete.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedUserIds.includes(athlete.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedUserIds([...selectedUserIds, athlete.id])
+                      else setSelectedUserIds(selectedUserIds.filter((id) => id !== athlete.id))
+                    }}
+                    className="accent-emerald-600"
+                  />
+                  <span className="text-sm">{athlete.full_name} ({athlete.email})</span>
+                </label>
+              ))}
+            </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="date">Fecha Programada</Label>
-            <Input
-              id="date"
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              required
-            />
+          <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="startDate">Fecha Inicio</Label>
+              <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="endDate">Fecha Fin</Label>
+              <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+            </div>
           </div>
         </CardContent>
       </Card>

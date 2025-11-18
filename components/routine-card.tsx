@@ -78,7 +78,15 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
               <Badge variant="outline" className="mr-2">
                 {routine.sports?.name}
               </Badge>
-              <span className="text-xs">{formatDate(routine.scheduled_date)}</span>
+              <span className="text-xs">
+                {routine.start_date && routine.end_date
+                  ? `${formatDate(routine.start_date)} - ${formatDate(routine.end_date)}`
+                  : routine.end_date
+                  ? formatDate(routine.end_date)
+                  : routine.start_date
+                  ? formatDate(routine.start_date)
+                  : "Sin fecha"}
+              </span>
             </CardDescription>
           </div>
           {!isPast && (

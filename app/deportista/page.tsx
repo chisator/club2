@@ -23,12 +23,17 @@ export default async function DeportistaPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener rutinas asignadas al usuario
-  const { data: routines } = await supabase
-    .from("routines")
-    .select("*")
+  // Obtener rutinas asignadas al usuario via routine_user_assignments
+  const { data: routineAssignments } = await supabase
+    .from("routine_user_assignments")
+    .select("routine_id")
     .eq("user_id", user.id)
-    .order("scheduled_date", { ascending: true })
+
+  const routineIds = routineAssignments?.map((r: any) => r.routine_id) || []
+
+  const { data: routines } = routineIds.length
+    ? await supabase.from("routines").select("*").in("id", routineIds).order("end_date", { ascending: true })
+    : { data: [] }
 
   // Calcular estadísticas
   const totalRoutines = routines?.length || 0
@@ -38,15 +43,17 @@ export default async function DeportistaPage() {
   today.setHours(0, 0, 0, 0)
 
   const upcomingRoutines = routines?.filter((r) => {
-    const routineDate = new Date(r.scheduled_date)
-    routineDate.setHours(0, 0, 0, 0)
-    return routineDate >= today
+    const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
+    if (!routineEnd) return false
+    routineEnd.setHours(0, 0, 0, 0)
+    return routineEnd >= today
   })
 
   const pastRoutines = routines?.filter((r) => {
-    const routineDate = new Date(r.scheduled_date)
-    routineDate.setHours(0, 0, 0, 0)
-    return routineDate < today
+    const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
+    if (!routineEnd) return false
+    routineEnd.setHours(0, 0, 0, 0)
+    return routineEnd < today
   })
 
   return (

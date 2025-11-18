@@ -7,7 +7,7 @@ import { LogoutButton } from "@/components/logout-button"
 import { TrainerRoutineCard } from "@/components/trainer-routine-card"
 import Link from "next/link"
 
-export default async function EntrenadorPage() {
+export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string } }) {
   const supabase = await createClient()
 
   const {
@@ -24,30 +24,70 @@ export default async function EntrenadorPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener rutinas del entrenador
-  const { data: routines } = await supabase
-    .from("routines")
-    .select("*")
+  // Obtener asignaciones entrenador-usuario
+  const { data: assignments } = await supabase
+    .from("trainer_user_assignments")
+    .select("user_id")
     .eq("trainer_id", user.id)
-    .order("scheduled_date", { ascending: false })
+    .order("created_at", { ascending: false })
+
+  const userIds = assignments?.map((a) => a.user_id) || []
+
+  // Obtener perfiles de esos usuarios para el filtro
+  const { data: athletes } = userIds.length
+    ? await supabase.from("profiles").select("*").in("id", userIds).order("full_name")
+    : { data: [] }
+
+  // Si hay filtro por usuario en querystring, obtener sólo las rutinas asignadas a ese usuario
+  let routines = [] as any[]
+  if (searchParams?.userId) {
+    const { data: routineAssignments } = await supabase
+      .from("routine_user_assignments")
+      .select("routine_id")
+      .eq("user_id", searchParams.userId)
+      .order("created_at", { ascending: false })
+
+    const routineIds = (routineAssignments || []).map((r: any) => r.routine_id)
+    if (routineIds.length > 0) {
+      const { data } = await supabase
+        .from("routines")
+        .select("*")
+        .in("id", routineIds)
+        .eq("trainer_id", user.id)
+        .order("end_date", { ascending: false })
+      routines = data || []
+    } else {
+      routines = []
+    }
+  } else {
+    const { data } = await supabase
+      .from("routines")
+      .select("*")
+      .eq("trainer_id", user.id)
+      .order("end_date", { ascending: false })
+    routines = data || []
+  }
 
   // Calcular estadísticas
   const totalRoutines = routines?.length || 0
+  const totalAssignedUsers = userIds.length || 0
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const upcomingRoutines =
     routines?.filter((r) => {
-      const routineDate = new Date(r.scheduled_date)
-      routineDate.setHours(0, 0, 0, 0)
-      return routineDate >= today
+      const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
+      if (!routineEnd) return false
+      routineEnd.setHours(0, 0, 0, 0)
+      return routineEnd >= today
     }) || []
 
   const pastRoutines =
     routines?.filter((r) => {
-      const routineDate = new Date(r.scheduled_date)
-      routineDate.setHours(0, 0, 0, 0)
-      return routineDate < today
+      const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
+      if (!routineEnd) return false
+      routineEnd.setHours(0, 0, 0, 0)
+      return routineEnd < today
     }) || []
 
   return (
@@ -97,7 +137,24 @@ export default async function EntrenadorPage() {
             </Link>
           </Button>
         </div>
-
+        <div className="mb-6">
+          <form method="get" className="flex items-center gap-2">
+            <label className="text-sm">Filtrar por usuario:</label>
+            <select
+              name="userId"
+              defaultValue={searchParams?.userId || ""}
+              className="rounded-md border px-2 py-1"
+            >
+              <option value="">Todos</option>
+              {athletes?.map((a: any) => (
+                <option key={a.id} value={a.id}>
+                  {a.full_name}
+                </option>
+              ))}
+            </select>
+            <Button type="submit">Aplicar</Button>
+          </form>
+        </div>
         <div className="grid gap-6 md:grid-cols-3 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -146,8 +203,8 @@ export default async function EntrenadorPage() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">-</div>
-              <p className="text-xs text-muted-foreground">Gestiona desde administración</p>
+              <div className="text-3xl font-bold">{totalAssignedUsers}</div>
+              <p className="text-xs text-muted-foreground">Usuarios asignados a ti</p>
             </CardContent>
           </Card>
         </div>
