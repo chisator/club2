@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import { TrainerRoutineCard } from "@/components/trainer-routine-card"
 import Link from "next/link"
+import { ExportImportDialog } from "@/components/export-import-dialog"
 
 export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string } }) {
   const supabase = await createClient()
@@ -123,19 +124,21 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-3xl font-bold text-balance">Bienvenido, {profile?.full_name}</h2>
             <p className="text-muted-foreground mt-1">Gestiona tus rutinas de entrenamiento</p>
           </div>
-          <Button asChild size="lg">
-            <Link href="/entrenador/crear-rutina">
-              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Nueva Rutina
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="lg" className="text-xs sm:text-base">
+              <Link href="/entrenador/crear-rutina">
+                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Nueva Rutina
+              </Link>
+            </Button>
+          </div>
         </div>
         <div className="mb-6">
           <form method="get" className="flex items-center gap-2">
@@ -248,6 +251,8 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
           </div>
         </div>
       </main>
+
+      <ExportImportDialog isOpen={false} onOpenChange={() => {}} athletes={athletes || []} />
     </div>
   )
 }

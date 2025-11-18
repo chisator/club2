@@ -7,6 +7,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { RenewRoutineDialog } from "@/components/renew-routine-dialog"
+import { ExportImportDialog } from "@/components/export-import-dialog"
 
 interface TrainerRoutineCardProps {
   routine: any
@@ -17,6 +18,7 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
   const [showDetails, setShowDetails] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showRenewDialog, setShowRenewDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   const exercises = Array.isArray(routine.exercises) ? routine.exercises : []
 
@@ -79,13 +81,13 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
         {routine.description && <p className="text-sm text-muted-foreground mb-4">{routine.description}</p>}
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium">{exercises.length} ejercicios</p>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)}>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)} className="text-xs sm:text-sm">
                 {showDetails ? "Ocultar" : "Ver"} detalles
               </Button>
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
                 <Link href={`/entrenador/editar-rutina/${routine.id}`}>Editar</Link>
               </Button>
               <Button
@@ -93,12 +95,15 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
                 size="sm"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive text-xs sm:text-sm"
               >
                 {isDeleting ? "Eliminando..." : "Eliminar"}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowRenewDialog(true)} disabled={isDeleting}>
+              <Button variant="outline" size="sm" onClick={() => setShowRenewDialog(true)} disabled={isDeleting} className="text-xs sm:text-sm">
                 Renovar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)} disabled={isDeleting} className="text-xs sm:text-sm">
+                Descargar
               </Button>
             </div>
           </div>
@@ -127,6 +132,12 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
         onOpenChange={setShowRenewDialog}
         routineId={routine.id}
         currentEndDate={routine.end_date}
+      />
+
+      <ExportImportDialog
+        isOpen={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        routineId={routine.id}
       />
     </Card>
   )

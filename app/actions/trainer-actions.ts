@@ -147,3 +147,130 @@ export async function renewRoutine({
     return { error: error.message || "Error al renovar rutina" }
   }
 }
+
+export async function exportRoutine(routineId: string, format: "json" | "csv") {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.role !== "entrenador") {
+      return { error: "No tienes permisos para exportar rutinas" }
+    }
+
+    // Obtener rutina y asignaciones
+    const { data: routine, error: routineErr } = await supabase
+      .from("routines")
+      .select("*")
+      .eq("id", routineId)
+      .eq("trainer_id", user.id)
+      .single()
+
+    if (routineErr || !routine) {
+      return { error: "Rutina no encontrada o sin permisos" }
+    }
+
+    // Obtener usuarios asignados
+    const { data: assignments } = await supabase
+      .from("routine_user_assignments")
+      .select("user_id")
+      .eq("routine_id", routineId)
+
+    const userIds = assignments?.map((a: any) => a.user_id) || []
+
+    // Obtener nombres de usuarios
+    const { data: users } = userIds.length
+      ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
+      : { data: [] }
+
+    const userData = users || []
+
+    if (format === "json") {
+      const exportData = {
+        routine: {
+          title: routine.title,
+          description: routine.description,
+          start_date: routine.start_date,
+          end_date: routine.end_date,
+          exercises: routine.exercises,
+        },
+        assigned_users: userData.map((u: any) => ({ id: u.id, name: u.full_name })),
+      }
+      return { success: true, data: JSON.stringify(exportData, null, 2), filename: `${routine.title}.json` }
+    }
+
+    if (format === "csv") {
+      let csv = "Titulo,Descripción,Fecha Inicio,Fecha Fin\n"
+      csv += `"${routine.title}","${routine.description || ""}","${routine.start_date}","${routine.end_date}"\n\n`
+      csv += "Ejercicios\n"
+      csv += "Nombre,Series,Repeticiones,Duracion,Notas\n"
+      routine.exercises?.forEach((ex: any) => {
+        csv += `"${ex.name}","${ex.sets || ""}","${ex.reps || ""}","${ex.duration || ""}","${ex.notes || ""}"\n`
+      })
+      csv += "\nUsuarios Asignados\n"
+      csv += "Nombre\n"
+      userData.forEach((u: any) => {
+        csv += `"${u.full_name}"\n`
+      })
+      return { success: true, data: csv, filename: `${routine.title}.csv` }
+    }
+
+    return { error: "Formato no soportado" }
+  } catch (error: any) {
+    return { error: error.message || "Error al exportar rutina" }
+  }
+}
+
+export async function importRoutine(formData: {
+  title: string
+  description: string
+  start_date: string
+  end_date: string
+  exercises: any[]
+  userIds: string[]
+}) {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.role !== "entrenador") {
+      return { error: "No tienes permisos para importar rutinas" }
+    }
+
+    // Crear rutina
+    const { data: inserted, error: insertErr } = await supabase
+      .from("routines")
+      .insert({
+        title: formData.title,
+        description: formData.description,
+        trainer_id: user.id,
+        start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
+        end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
+        exercises: formData.exercises,
+      })
+      .select("id")
+      .single()
+
+    if (insertErr || !inserted) {
+      return { error: insertErr?.message || "No se pudo crear la rutina" }
+    }
+
+    // Asignar usuarios
+    if (formData.userIds.length > 0) {
+      const assignments = formData.userIds.map((uid) => ({
+        routine_id: inserted.id,
+        user_id: uid,
+      }))
+      const { error: assignErr } = await supabase.from("routine_user_assignments").insert(assignments)
+      if (assignErr) return { error: assignErr.message }
+    }
+
+    revalidatePath("/entrenador")
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || "Error al importar rutina" }
+  }
+}
