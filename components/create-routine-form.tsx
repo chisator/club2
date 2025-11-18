@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/client"
+import { importRoutine } from "@/app/actions/trainer-actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -91,31 +92,21 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
       return
     }
 
-    const supabase = createClient()
-
     try {
       // Filtrar ejercicios vacíos
       const validExercises = exercises.filter((ex) => ex.name.trim() !== "")
 
-      const { data: inserted, error: insertError } = await supabase
-        .from("routines")
-        .insert({
-          title,
-          description,
-          trainer_id: trainerId,
-          start_date: startDate ? new Date(startDate).toISOString() : null,
-          end_date: endDate ? new Date(endDate).toISOString() : null,
-          exercises: validExercises,
-        })
-        .select("id")
-        .single()
+      // Llamar a la acción del servidor que crea la rutina y asignaciones
+      const result = await importRoutine({
+        title,
+        description,
+        start_date: startDate ? new Date(startDate).toISOString() : "",
+        end_date: endDate ? new Date(endDate).toISOString() : "",
+        exercises: validExercises,
+        userIds: selectedUserIds,
+      })
 
-      if (insertError || !inserted) throw insertError || new Error("No se pudo crear la rutina")
-
-      // Insertar asignaciones múltiples
-      const assignments = selectedUserIds.map((uid) => ({ routine_id: inserted.id, user_id: uid }))
-      const { error: assignError } = await supabase.from("routine_user_assignments").insert(assignments)
-      if (assignError) throw assignError
+      if (result.error) throw new Error(result.error)
 
       router.push("/entrenador")
       router.refresh()
