@@ -14,6 +14,9 @@ create table if not exists public.trainer_user_assignments (
 -- Primero, agregar la columna user_id si no existe
 alter table if exists public.routines add column if not exists user_id uuid references public.profiles(id) on delete cascade;
 
+-- Hacer sport_id nullable si aún no lo es
+alter table if exists public.routines alter column sport_id drop not null;
+
 -- 3. Crear una tabla temporal para respaldar datos si es necesario
 -- (Mantener compatibilidad con rutinas existentes)
 

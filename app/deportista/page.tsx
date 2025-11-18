@@ -23,47 +23,15 @@ export default async function DeportistaPage() {
     redirect("/unauthorized")
   }
 
-  // Obtener deportes del atleta
-  const { data: athleteSports } = await supabase
-    .from("athlete_sports")
-    .select(
-      `
-      sport_id,
-      sports (
-        id,
-        name,
-        description
-      )
-    `,
-    )
-    .eq("athlete_id", user.id)
-
-  const sportIds = athleteSports?.map((as) => as.sport_id) || []
-
-  // Obtener rutinas de los deportes del atleta
+  // Obtener rutinas asignadas al usuario
   const { data: routines } = await supabase
     .from("routines")
-    .select(
-      `
-      *,
-      sports (
-        name
-      ),
-      profiles (
-        full_name
-      )
-    `,
-    )
-    .in("sport_id", sportIds)
+    .select("*")
+    .eq("user_id", user.id)
     .order("scheduled_date", { ascending: true })
-
-  // Obtener asistencia del atleta
-  const { data: attendance } = await supabase.from("attendance").select("*").eq("athlete_id", user.id)
 
   // Calcular estadísticas
   const totalRoutines = routines?.length || 0
-  const completedRoutines = attendance?.filter((a) => a.completed).length || 0
-  const completionRate = totalRoutines > 0 ? Math.round((completedRoutines / totalRoutines) * 100) : 0
 
   // Filtrar rutinas por fecha
   const today = new Date()
@@ -92,8 +60,8 @@ export default async function DeportistaPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold">Club Deportivo</h1>
-              <p className="text-xs text-muted-foreground">Panel de Deportista</p>
+              <h1 className="text-lg font-bold">Gimnasio</h1>
+              <p className="text-xs text-muted-foreground">Panel de Usuario</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -114,34 +82,9 @@ export default async function DeportistaPage() {
           <p className="text-muted-foreground mt-1">Aquí puedes ver tus rutinas y seguir tu progreso</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           <StatsCard title="Rutinas Totales" value={totalRoutines} icon="calendar" />
-          <StatsCard title="Completadas" value={completedRoutines} icon="check" />
-          <StatsCard title="Tasa de Cumplimiento" value={`${completionRate}%`} icon="chart" />
-        </div>
-
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mis Deportes</CardTitle>
-              <CardDescription>Deportes en los que estás inscrito</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {athleteSports && athleteSports.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {athleteSports.map((as: any) => (
-                    <Badge key={as.sport_id} variant="outline" className="text-sm px-3 py-1">
-                      {as.sports.name}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No estás inscrito en ningún deporte. Contacta al administrador.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <StatsCard title="Completadas" value={upcomingRoutines?.length || 0} icon="check" />
         </div>
 
         <div className="space-y-8">
@@ -153,7 +96,6 @@ export default async function DeportistaPage() {
                   <RoutineCard
                     key={routine.id}
                     routine={routine}
-                    attendance={attendance?.find((a) => a.routine_id === routine.id)}
                     athleteId={user.id}
                   />
                 ))}
@@ -175,7 +117,6 @@ export default async function DeportistaPage() {
                   <RoutineCard
                     key={routine.id}
                     routine={routine}
-                    attendance={attendance?.find((a) => a.routine_id === routine.id)}
                     athleteId={user.id}
                     isPast
                   />

@@ -55,6 +55,13 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
     setIsLoading(true)
     setError(null)
 
+    // Validar que se seleccionó un usuario
+    if (!userId) {
+      setError("Debes seleccionar un usuario")
+      setIsLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     try {

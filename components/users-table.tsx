@@ -41,6 +41,31 @@ export function UsersTable({ users }: UsersTableProps) {
     setIsLoading(true)
     setError(null)
 
+    // Validaciones
+    if (!fullName.trim()) {
+      setError("El nombre completo es requerido")
+      setIsLoading(false)
+      return
+    }
+
+    if (!email.trim()) {
+      setError("El email es requerido")
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener mínimo 6 caracteres")
+      setIsLoading(false)
+      return
+    }
+
+    if (!role) {
+      setError("Debes seleccionar un rol")
+      setIsLoading(false)
+      return
+    }
+
     const result = await createUser({
       email,
       password,
@@ -54,11 +79,13 @@ export function UsersTable({ users }: UsersTableProps) {
       return
     }
 
+    // Limpiar y cerrar
     setIsOpen(false)
     setEmail("")
     setPassword("")
     setFullName("")
     setRole("deportista")
+    setError(null)
     setIsLoading(false)
   }
 
@@ -135,7 +162,17 @@ export function UsersTable({ users }: UsersTableProps) {
             <CardTitle>Gestión de Usuarios</CardTitle>
             <CardDescription>Administra los usuarios del club deportivo</CardDescription>
           </div>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <Dialog open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open)
+            if (!open) {
+              // Resetear cuando se cierra
+              setEmail("")
+              setPassword("")
+              setFullName("")
+              setRole("deportista")
+              setError(null)
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>Crear Usuario</Button>
             </DialogTrigger>

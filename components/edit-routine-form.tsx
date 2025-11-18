@@ -47,6 +47,13 @@ export function EditRoutineForm({ routine, athletes }: EditRoutineFormProps) {
     setIsLoading(true)
     setError(null)
 
+    // Validar que se seleccionó un usuario
+    if (!userId) {
+      setError("Debes seleccionar un usuario")
+      setIsLoading(false)
+      return
+    }
+
     const result = await updateRoutine({
       routineId: routine.id,
       title,
