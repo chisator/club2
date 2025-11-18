@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { RenewRoutineDialog } from "@/components/renew-routine-dialog"
@@ -19,6 +19,8 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
   const [isDeleting, setIsDeleting] = useState(false)
   const [showRenewDialog, setShowRenewDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
 
   const exercises = Array.isArray(routine.exercises) ? routine.exercises : []
 
@@ -48,6 +50,17 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
     // eliminado correctamente
     window.location.reload()
   }
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!menuRef.current) return
+      if (e.target instanceof Node && !menuRef.current.contains(e.target)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
 
   return (
     <Card>
@@ -83,28 +96,71 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
         <div className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium">{exercises.length} ejercicios</p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)} className="text-xs sm:text-sm">
-                {showDetails ? "Ocultar" : "Ver"} detalles
-              </Button>
-              <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
-                <Link href={`/entrenador/editar-rutina/${routine.id}`}>Editar</Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-destructive hover:text-destructive text-xs sm:text-sm"
-              >
-                {isDeleting ? "Eliminando..." : "Eliminar"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowRenewDialog(true)} disabled={isDeleting} className="text-xs sm:text-sm">
-                Renovar
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)} disabled={isDeleting} className="text-xs sm:text-sm">
-                Descargar
-              </Button>
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)} className="text-xs sm:text-sm">
+                  {showDetails ? "Ocultar" : "Ver"} detalles
+                </Button>
+                <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
+                  <Link href={`/entrenador/editar-rutina/${routine.id}`}>Editar</Link>
+                </Button>
+
+                {/* Three-dots menu trigger */}
+                <div ref={menuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowMenu((s) => !s)}
+                    className="p-2 rounded hover:bg-muted/50 text-sm"
+                    aria-label="Más acciones"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="5" r="1.5" />
+                      <circle cx="12" cy="12" r="1.5" />
+                      <circle cx="12" cy="19" r="1.5" />
+                    </svg>
+                  </button>
+
+                  {showMenu && (
+                    <div className="absolute right-0 mt-2 w-44 rounded-md border bg-popover p-1 shadow-lg z-50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false)
+                          handleDelete()
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent/20 rounded"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Eliminando..." : "Eliminar"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false)
+                          setShowRenewDialog(true)
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent/20 rounded"
+                        disabled={isDeleting}
+                      >
+                        Renovar
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false)
+                          setShowExportDialog(true)
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent/20 rounded"
+                        disabled={isDeleting}
+                      >
+                        Descargar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
