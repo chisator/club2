@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ImportExercisesDialog } from "@/components/import-exercises-dialog"
 
 interface Exercise {
   name: string
@@ -29,6 +30,7 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -49,6 +51,19 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
     const newExercises = [...exercises]
     newExercises[index] = { ...newExercises[index], [field]: value }
     setExercises(newExercises)
+  }
+
+  const handleImportExercises = (importedExercises: Exercise[]) => {
+    // Reemplazar la lista actual de ejercicios con los importados
+    // Mantener el primer ejercicio vacío si es que viene vacío, y añadir los importados
+    const currentEmpty = exercises.filter((ex) => ex.name.trim() === "")
+    if (currentEmpty.length === exercises.length) {
+      // Si todos los ejercicios están vacíos, reemplazar completamente
+      setExercises(importedExercises)
+    } else {
+      // Si hay ejercicios, concatenar los importados
+      setExercises([...exercises, ...importedExercises])
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -177,14 +192,19 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
 
       <Card className="mt-6">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex-1 min-w-fit">
               <CardTitle>Ejercicios</CardTitle>
               <CardDescription>Agrega los ejercicios de la rutina</CardDescription>
             </div>
-            <Button type="button" variant="outline" onClick={addExercise}>
-              Agregar Ejercicio
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowImportDialog(true)}>
+                Importar Ejercicios
+              </Button>
+              <Button type="button" variant="outline" onClick={addExercise}>
+                Agregar Ejercicio
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -273,6 +293,12 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
           Cancelar
         </Button>
       </div>
+
+      <ImportExercisesDialog 
+        isOpen={showImportDialog} 
+        onOpenChange={setShowImportDialog} 
+        onImport={handleImportExercises}
+      />
     </form>
   )
 }

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import { TrainerRoutineCard } from "@/components/trainer-routine-card"
 import Link from "next/link"
-import { ExportImportWrapper } from "@/components/export-import-wrapper"
 
 export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string } }) {
   const supabase = await createClient()
@@ -251,8 +250,6 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
           </div>
         </div>
       </main>
-
-      <ExportImportWrapper athletes={athletes || []} />
     </div>
   )
 }

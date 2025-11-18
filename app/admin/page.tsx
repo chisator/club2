@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { LogoutButton } from "@/components/logout-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UsersTable } from "@/components/users-table"
-import { SportsTable } from "@/components/sports-table"
 import { AssignmentsTable } from "@/components/assignments-table"
 
 export default async function AdminPage() {
