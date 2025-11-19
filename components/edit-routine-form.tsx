@@ -16,9 +16,12 @@ interface EditRoutineFormProps {
   routine: any
   athletes: any[]
   assignedUserIds?: string[]
+  // New props for admin view
+  isAdmin?: boolean
+  trainers?: any[]
 }
 
-export function EditRoutineForm({ routine, athletes, assignedUserIds = [] }: EditRoutineFormProps) {
+export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdmin = false, trainers = [] }: EditRoutineFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,6 +29,8 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [] }: Edi
   const [title, setTitle] = useState(routine.title)
   const [description, setDescription] = useState(routine.description || "")
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(assignedUserIds || (routine.user_id ? [routine.user_id] : []))
+  // If admin, allow changing trainer
+  const [selectedTrainerId, setSelectedTrainerId] = useState<string>(routine.trainer_id)
   const [startDate, setStartDate] = useState(
     routine.start_date ? String(routine.start_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : ""
   )
@@ -79,6 +84,8 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [] }: Edi
       startDate,
       endDate,
       exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
+      // Pass selectedTrainerId if admin is editing
+      trainerId: selectedTrainerId,
     })
 
     if (result.error) {
@@ -87,7 +94,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [] }: Edi
       return
     }
 
-    router.push("/entrenador")
+    router.push(isAdmin ? "/admin" : "/entrenador")
   }
 
   return (
@@ -98,6 +105,24 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [] }: Edi
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {isAdmin && (
+            <div className="grid gap-2">
+              <Label htmlFor="trainer">Entrenador Responsable</Label>
+              <Select onValueChange={setSelectedTrainerId} value={selectedTrainerId} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un entrenador..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainers.map((trainer) => (
+                    <SelectItem key={trainer.id} value={trainer.id}>
+                      {trainer.full_name} ({trainer.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="title">Título de la Rutina</Label>

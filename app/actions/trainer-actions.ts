@@ -12,6 +12,8 @@ export async function updateRoutine(formData: {
   startDate?: string
   endDate?: string
   exercises: any[]
+  // New optional field for admin to assign routine to a specific trainer
+  trainerId?: string
 }) {
   try {
     const supabase = await createServerClient()
@@ -19,7 +21,10 @@ export async function updateRoutine(formData: {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== "entrenador") {
+    const userRole = user?.user_metadata?.role
+
+    // Allow both trainers and admins
+    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
       return { error: "No tienes permisos para actualizar rutinas" }
     }
 
@@ -31,10 +36,19 @@ export async function updateRoutine(formData: {
 
     if (formData.startDate) updatePayload.start_date = new Date(formData.startDate).toISOString()
     if (formData.endDate) updatePayload.end_date = new Date(formData.endDate).toISOString()
+    // If admin is updating, they can change the trainer_id
+    if (userRole === 'administrador' && formData.trainerId) {
+        updatePayload.trainer_id = formData.trainerId
+    }
 
-    const { error: updateError } = await supabase.from("routines").update(updatePayload).eq("id", formData.routineId).eq("trainer_id", user.id)
-      .eq("id", formData.routineId)
-      .eq("trainer_id", user.id)
+    let query = supabase.from("routines").update(updatePayload).eq("id", formData.routineId)
+
+    // If not admin, restrict update to their own routines
+    if (userRole !== "administrador") {
+        query = query.eq("trainer_id", user.id)
+    }
+
+    const { error: updateError } = await query
 
     if (updateError) {
       return { error: updateError.message }
@@ -42,18 +56,22 @@ export async function updateRoutine(formData: {
 
     // Si vienen userIds, sincronizar las asignaciones en routine_user_assignments
     if (formData.userIds) {
-      // Borrar asignaciones previas para esta rutina (el trainer propietario puede hacerlo por RLS)
+      // Borrar asignaciones previas para esta rutina (el trainer propietario o admin puede hacerlo por RLS)
       const { error: delError } = await supabase.from("routine_user_assignments").delete().eq("routine_id", formData.routineId)
       if (delError) return { error: delError.message }
 
       if (formData.userIds.length > 0) {
-        const rows = formData.userIds.map((uid) => ({ routine_id: formData.routineId, user_id: uid }))
+        const rows = formData.userIds.map((uid) => ({
+          routine_id: formData.routineId, 
+          user_id: uid
+        }))
         const { error: insError } = await supabase.from("routine_user_assignments").insert(rows)
         if (insError) return { error: insError.message }
       }
     }
 
     revalidatePath("/entrenador")
+    revalidatePath("/admin") // Revalidate admin page also
     return { success: true }
   } catch (error: any) {
     return { error: error.message || "Error al actualizar rutina" }
@@ -67,17 +85,28 @@ export async function deleteRoutine(routineId: string) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== "entrenador") {
+    const userRole = user?.user_metadata?.role
+
+    // Allow both trainers and admins
+    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
       return { error: "No tienes permisos para eliminar rutinas" }
     }
 
-    const { error } = await supabase.from("routines").delete().eq("id", routineId).eq("trainer_id", user.id)
+    let query = supabase.from("routines").delete().eq("id", routineId)
+
+    // If not admin, restrict deletion to their own routines
+    if (userRole !== "administrador") {
+        query = query.eq("trainer_id", user.id)
+    }
+
+    const { error } = await query
 
     if (error) {
       return { error: error.message }
     }
 
     revalidatePath("/entrenador")
+    revalidatePath("/admin") // Revalidate admin page also
     return { success: true }
   } catch (error: any) {
     return { error: error.message || "Error al eliminar rutina" }
@@ -203,6 +232,8 @@ export async function importRoutine(formData: {
   end_date: string
   exercises: any[]
   userIds: string[]
+  // New optional field for admin
+  trainerId?: string
 }) {
   try {
     const supabase = await createServerClient()
@@ -210,8 +241,18 @@ export async function importRoutine(formData: {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== "entrenador") {
+    // Allow both trainers and admins
+    const userRole = user?.user_metadata?.role
+    if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
       return { error: "No tienes permisos para importar rutinas" }
+    }
+
+    // Determine the trainer_id for the new routine
+    // If admin is creating, trainerId must be provided.
+    // If trainer is creating, it's their own user.id.
+    const trainer_id = userRole === 'administrador' ? formData.trainerId : user.id
+    if(!trainer_id) {
+        return { error: "Como administrador, debes seleccionar un entrenador." }
     }
 
     // Crear rutina
@@ -220,7 +261,7 @@ export async function importRoutine(formData: {
       .insert({
         title: formData.title,
         description: formData.description,
-        trainer_id: user.id,
+        trainer_id: trainer_id,
         start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
         end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
         exercises: formData.exercises,

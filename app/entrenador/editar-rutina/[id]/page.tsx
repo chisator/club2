@@ -13,29 +13,42 @@ export default async function EditRoutinePage({ params }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user || user.user_metadata?.role !== "entrenador") {
+  const userRole = user?.user_metadata?.role
+
+  if (!user || (userRole !== "entrenador" && userRole !== "administrador")) {
     redirect("/unauthorized")
   }
 
   // Obtener la rutina
-  const { data: routine, error } = await supabase
+  let query = supabase
     .from("routines")
     .select("*")
     .eq("id", params.id)
-    .eq("trainer_id", user.id)
-    .single()
 
-  if (error || !routine) {
-    redirect("/entrenador")
+  // Si no es admin, solo puede ver sus propias rutinas
+  if (userRole !== "administrador") {
+    query = query.eq("trainer_id", user.id)
   }
 
-  // Obtener usuarios asignados al entrenador
-  const { data: assignments } = await supabase
-    .from("trainer_user_assignments")
-    .select("user_id")
-    .eq("trainer_id", user.id)
+  const { data: routine, error } = await query.single()
 
-  const userIds = assignments?.map((a) => a.user_id) || []
+  if (error || !routine) {
+    // Redirigir si no se encuentra la rutina o no tiene permisos (para no admin)
+    redirect(userRole === "administrador" ? "/admin" : "/entrenador")
+  }
+
+  // Obtener usuarios asignados al entrenador (o todos si es admin)
+  let trainerUserIds = [] as string[]
+  if (userRole === "administrador") {
+    const { data: allProfiles } = await supabase.from("profiles").select("id").eq("role", "deportista")
+    trainerUserIds = allProfiles?.map(p => p.id) || []
+  } else {
+    const { data: assignments } = await supabase
+      .from("trainer_user_assignments")
+      .select("user_id")
+      .eq("trainer_id", user.id)
+    trainerUserIds = assignments?.map((a) => a.user_id) || []
+  }
   
   // Obtener usuarios asignados a la rutina específica
   const { data: routineAssignments } = await supabase
@@ -45,10 +58,17 @@ export default async function EditRoutinePage({ params }: PageProps) {
   
   const assignedUserIds = routineAssignments?.map((a: any) => a.user_id) || []
 
-  // Obtener perfiles de esos usuarios
-  const { data: athletes } = userIds.length
-    ? await supabase.from("profiles").select("*").in("id", userIds).order("full_name")
+  // Obtener perfiles de deportistas (filtrados por entrenador o todos para admin)
+  const { data: athletes } = trainerUserIds.length
+    ? await supabase.from("profiles").select("*").in("id", trainerUserIds).order("full_name")
     : { data: [] }
+
+  // Obtener todos los entrenadores si el usuario actual es administrador
+  let allTrainers = [] as any[]
+  if (userRole === "administrador") {
+    const { data: trainersData } = await supabase.from("profiles").select("id, full_name, email").eq("role", "entrenador").order("full_name")
+    allTrainers = trainersData || []
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -58,7 +78,13 @@ export default async function EditRoutinePage({ params }: PageProps) {
           <p className="text-muted-foreground mt-2">Actualiza los detalles de la rutina de entrenamiento</p>
         </div>
 
-        <EditRoutineForm routine={routine} athletes={athletes || []} assignedUserIds={assignedUserIds} />
+        <EditRoutineForm 
+          routine={routine} 
+          athletes={athletes || []} 
+          assignedUserIds={assignedUserIds} 
+          isAdmin={userRole === "administrador"} 
+          trainers={allTrainers} 
+        />
       </div>
     </div>
   )

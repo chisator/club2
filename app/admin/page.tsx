@@ -6,6 +6,7 @@ import { LogoutButton } from "@/components/logout-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UsersTable } from "@/components/users-table"
 import { AssignmentsTable } from "@/components/assignments-table"
+import { RoutinesTable } from "@/components/routines-table"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -185,9 +186,10 @@ export default async function AdminPage() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="assignments">Asignaciones</TabsTrigger>
+            <TabsTrigger value="routines">Rutinas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -196,6 +198,10 @@ export default async function AdminPage() {
 
           <TabsContent value="assignments">
             <AssignmentsTable assignments={assignments || []} users={users || []} />
+          </TabsContent>
+          
+          <TabsContent value="routines">
+            <RoutinesTable routines={routines || []} trainers={users?.filter(u => u.role === 'entrenador') || []} />
           </TabsContent>
         </Tabs>
       </main>

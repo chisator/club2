@@ -72,14 +72,14 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Verificar acceso a rutas de entrenador
-    if (request.nextUrl.pathname.startsWith("/entrenador") && role !== "entrenador") {
+    if (request.nextUrl.pathname.startsWith("/entrenador") && role !== "entrenador" && role !== "administrador") {
       const url = request.nextUrl.clone()
       url.pathname = "/unauthorized"
       return NextResponse.redirect(url)
     }
 
     // Verificar acceso a rutas de deportista
-    if (request.nextUrl.pathname.startsWith("/deportista") && role !== "deportista") {
+    if (request.nextUrl.pathname.startsWith("/deportista") && role !== "deportista" && role !== "administrador") {
       const url = request.nextUrl.clone()
       url.pathname = "/unauthorized"
       return NextResponse.redirect(url)

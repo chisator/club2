@@ -24,10 +24,14 @@ interface Exercise {
 
 interface CreateRoutineFormProps {
   athletes: any[]
-  trainerId: string
+  // trainerId is now creatorId
+  creatorId: string
+  // For admins, a list of trainers to choose from
+  trainers?: any[]
+  isAdmin?: boolean
 }
 
-export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProps) {
+export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin = false }: CreateRoutineFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,6 +39,8 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
+  // For admin: to select which trainer the routine belongs to
+  const [selectedTrainerId, setSelectedTrainerId] = useState<string>(isAdmin ? "" : creatorId)
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
@@ -104,6 +110,8 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
         end_date: endDate ? new Date(endDate).toISOString() : "",
         exercises: validExercises,
         userIds: selectedUserIds,
+        // Pass the selected trainerId if admin is creating
+        trainerId: selectedTrainerId,
       })
 
       if (result.error) throw new Error(result.error)
@@ -129,6 +137,25 @@ export function CreateRoutineForm({ athletes, trainerId }: CreateRoutineFormProp
           <CardDescription>Completa los datos básicos de la rutina</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+
+          {isAdmin && (
+            <div className="grid gap-2">
+              <Label htmlFor="trainer">Entrenador Responsable</Label>
+              <Select onValueChange={setSelectedTrainerId} value={selectedTrainerId} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un entrenador..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainers.map((trainer) => (
+                    <SelectItem key={trainer.id} value={trainer.id}>
+                      {trainer.full_name} ({trainer.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-2">
             <Label htmlFor="title">Título de la Rutina</Label>
             <Input
