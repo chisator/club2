@@ -77,7 +77,7 @@ export default async function CrearRutinaPage() {
           <p className="text-muted-foreground mt-1">Define los ejercicios y asigna la rutina a un usuario</p>
         </div>
 
-        <CreateRoutineForm athletes={athletes || []} trainerId={user.id} />
+        <CreateRoutineForm athletes={athletes || []} creatorId={user.id} />
       </main>
     </div>
   )
