@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
+import Image from "next/image"
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -59,12 +61,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-              <svg className="h-8 w-8 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden p-4 mb-4">
+              <Image src="/logo.svg" alt="Logo" width={80} height={80} className="object-contain" />
             </div>
-            <h1 className="text-3xl font-bold">Club Deportivo</h1>
+            <h1 className="text-3xl font-bold">Club Castelar</h1>
             <p className="text-muted-foreground">Sistema de gestión de entrenamientos</p>
           </div>
           <Card>

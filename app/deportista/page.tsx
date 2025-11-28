@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { LogoutButton } from "@/components/logout-button"
 import { RoutineCard } from "@/components/routine-card"
 import { StatsCard } from "@/components/stats-card"
+import Image from "next/image"
 
 export default async function DeportistaPage() {
   const supabase = await createClient()
@@ -61,10 +62,8 @@ export default async function DeportistaPage() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-              <svg className="h-5 w-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden p-4">
+              <Image src="/logo.svg" alt="Logo" width={100} height={100} className="object-contain" />
             </div>
             <div>
               <h1 className="text-lg font-bold">Gimnasio</h1>
@@ -91,7 +90,6 @@ export default async function DeportistaPage() {
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
           <StatsCard title="Rutinas Totales" value={totalRoutines} icon="calendar" />
-          <StatsCard title="Completadas" value={upcomingRoutines?.length || 0} icon="check" />
         </div>
 
         <div className="space-y-8">

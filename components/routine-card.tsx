@@ -3,8 +3,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { createClient } from "@/lib/client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
@@ -16,48 +14,11 @@ interface RoutineCardProps {
 }
 
 export function RoutineCard({ routine, attendance, athleteId, isPast = false }: RoutineCardProps) {
-  const [isCompleted, setIsCompleted] = useState(attendance?.completed || false)
-  const [isLoading, setIsLoading] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const router = useRouter()
 
   const exercises = Array.isArray(routine.exercises) ? routine.exercises : []
-
-  const handleToggleComplete = async () => {
-    setIsLoading(true)
-    const supabase = createClient()
-
-    try {
-      if (attendance) {
-        const { error } = await supabase
-          .from("attendance")
-          .update({
-            completed: !isCompleted,
-            completed_at: !isCompleted ? new Date().toISOString() : null,
-          })
-          .eq("id", attendance.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from("attendance").insert({
-          routine_id: routine.id,
-          athlete_id: athleteId,
-          completed: true,
-          completed_at: new Date().toISOString(),
-        })
-
-        if (error) throw error
-      }
-
-      setIsCompleted(!isCompleted)
-      router.refresh()
-    } catch (error) {
-      console.error("Error al actualizar asistencia:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("es-ES", {
@@ -69,7 +30,7 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
   }
 
   return (
-    <Card className={isCompleted ? "border-green-500 bg-green-50 dark:bg-green-950/20" : ""}>
+    <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -89,20 +50,7 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
               </span>
             </CardDescription>
           </div>
-          {!isPast && (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={isCompleted}
-                onCheckedChange={handleToggleComplete}
-                disabled={isLoading}
-                id={`complete-${routine.id}`}
-              />
-              <label htmlFor={`complete-${routine.id}`} className="text-sm cursor-pointer">
-                Completada
-              </label>
-            </div>
-          )}
-          {isPast && isCompleted && (
+          {isPast && attendance?.completed && (
             <Badge variant="default" className="bg-green-600">
               Completada
             </Badge>

@@ -116,7 +116,37 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    @apply bg-background;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: transparent;
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    background-image: url('/logo.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    opacity: 0.08;
+    z-index: 9999;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+
+  .dark body::before {
+    mix-blend-mode: screen;
+    opacity: 0.1;
   }
 }
