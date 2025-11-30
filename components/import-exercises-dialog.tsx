@@ -11,7 +11,7 @@ interface Exercise {
   name: string
   sets: string
   reps: string
-  weight?: number
+  weight?: string
   rest?: number
   notes?: string
 }
@@ -52,7 +52,7 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
           name: String(row[nameIdx]).trim(),
           sets: String(row[setsIdx] || "3").trim(),
           reps: String(row[repsIdx] || "10").trim(),
-          weight: weightIdx >= 0 && row[weightIdx] ? parseFloat(String(row[weightIdx])) : undefined,
+          weight: weightIdx >= 0 && row[weightIdx] ? String(row[weightIdx]) : undefined,
           rest: restIdx >= 0 && row[restIdx] ? parseInt(String(row[restIdx])) : undefined,
           notes: notesIdx >= 0 && row[notesIdx] ? String(row[notesIdx]).trim() : undefined,
         })
@@ -102,7 +102,7 @@ export function ImportExercisesDialog({ isOpen, onOpenChange, onImport }: Import
               name: cols[nameIdx],
               sets: cols[setsIdx] || "3",
               reps: cols[repsIdx] || "10",
-              weight: weightIdx >= 0 && cols[weightIdx] ? parseFloat(cols[weightIdx]) : undefined,
+              weight: weightIdx >= 0 && cols[weightIdx] ? cols[weightIdx] : undefined,
               rest: restIdx >= 0 && cols[restIdx] ? parseInt(cols[restIdx]) : undefined,
               notes: notesIdx >= 0 ? cols[notesIdx] : undefined,
             })

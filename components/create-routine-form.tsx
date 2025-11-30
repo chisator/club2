@@ -18,6 +18,7 @@ interface Exercise {
   name: string
   sets?: string
   reps?: string
+  weight?: string
   duration?: string
   notes?: string
 }
@@ -44,10 +45,10 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", duration: "", notes: "" }])
+  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", duration: "", notes: "" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
   }
 
   const removeExercise = (index: number) => {
@@ -119,8 +120,8 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
       // show diagnostic info in console for debugging
       console.log("Routine created:", result)
 
-      // Navigate back to trainer dashboard
-      router.push("/entrenador")
+      // Navigate back to trainer dashboard or admin dashboard
+      router.push(isAdmin ? "/admin" : "/entrenador")
       router.refresh()
     } catch (err: any) {
       setError(err.message || "Error al crear la rutina")
@@ -253,7 +254,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
                     <Input
@@ -271,6 +272,16 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                       placeholder="Ej: 10"
                       value={exercise.reps}
                       onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
+                    <Input
+                      id={`exercise-weight-${index}`}
+                      placeholder="Ej: 20kg"
+                      value={exercise.weight}
+                      onChange={(e) => updateExercise(index, "weight", e.target.value)}
                     />
                   </div>
 
@@ -311,14 +322,14 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
         <Button type="submit" disabled={isLoading} className="flex-1">
           {isLoading ? "Creando rutina..." : "Crear Rutina"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()} disabled={isLoading}>
+        <Button type="button" variant="outline" onClick={() => router.push(isAdmin ? "/admin" : "/entrenador")} disabled={isLoading}>
           Cancelar
         </Button>
       </div>
 
-      <ImportExercisesDialog 
-        isOpen={showImportDialog} 
-        onOpenChange={setShowImportDialog} 
+      <ImportExercisesDialog
+        isOpen={showImportDialog}
+        onOpenChange={setShowImportDialog}
         onImport={handleImportExercises}
       />
     </form>

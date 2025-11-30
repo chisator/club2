@@ -76,10 +76,10 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
                 {routine.start_date && routine.end_date
                   ? `${formatDate(routine.start_date)} - ${formatDate(routine.end_date)}`
                   : routine.end_date
-                  ? formatDate(routine.end_date)
-                  : routine.start_date
-                  ? formatDate(routine.start_date)
-                  : "Sin fecha"}
+                    ? formatDate(routine.end_date)
+                    : routine.start_date
+                      ? formatDate(routine.start_date)
+                      : "Sin fecha"}
               </span>
             </CardDescription>
           </div>
@@ -173,6 +173,7 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
                     <p className="font-medium">{exercise.name}</p>
                     {exercise.sets && <p className="text-muted-foreground">Series: {exercise.sets}</p>}
                     {exercise.reps && <p className="text-muted-foreground">Repeticiones: {exercise.reps}</p>}
+                    {exercise.weight && <p className="text-muted-foreground">Peso: {exercise.weight}</p>}
                     {exercise.duration && <p className="text-muted-foreground">Duración: {exercise.duration}</p>}
                     {exercise.notes && <p className="text-muted-foreground mt-1">{exercise.notes}</p>}
                   </li>

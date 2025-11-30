@@ -38,7 +38,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   const [exercises, setExercises] = useState(routine.exercises || [])
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", duration: "", notes: "" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
   }
 
   const removeExercise = (index: number) => {
@@ -207,7 +207,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                       </Button>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                       <div className="grid gap-2">
                         <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
                         <Input
@@ -225,6 +225,16 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                           placeholder="Ej: 12"
                           value={exercise.reps}
                           onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
+                        <Input
+                          id={`exercise-weight-${index}`}
+                          placeholder="Ej: 20kg"
+                          value={exercise.weight}
+                          onChange={(e) => updateExercise(index, "weight", e.target.value)}
                         />
                       </div>
 
@@ -261,7 +271,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
             <Button type="submit" disabled={isLoading} className="flex-1">
               {isLoading ? "Actualizando..." : "Actualizar Rutina"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.push("/entrenador")}>
+            <Button type="button" variant="outline" onClick={() => router.push(isAdmin ? "/admin" : "/entrenador")}>
               Cancelar
             </Button>
           </div>
