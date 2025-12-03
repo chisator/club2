@@ -25,7 +25,7 @@ export default async function AdminCrearRutinaPage() {
 
   // Como admin, necesitamos la lista de todos los deportistas y todos los entrenadores
   const { data: profiles } = await supabase.from("profiles").select("*").order("full_name")
-  
+
   const athletes = profiles?.filter(p => p.role === 'deportista') || []
   const trainers = profiles?.filter(p => p.role === 'entrenador') || []
 
@@ -34,7 +34,7 @@ export default async function AdminCrearRutinaPage() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600">
               <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -45,16 +45,29 @@ export default async function AdminCrearRutinaPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" asChild>
-              <Link href="/admin">Volver</Link>
+            {/* Mobile: Show only Back button */}
+            <Button variant="ghost" asChild className="md:hidden">
+              <Link href="/admin" className="flex items-center gap-2">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver
+              </Link>
             </Button>
-            <div className="text-right">
-              <p className="text-sm font-medium">{profile?.full_name}</p>
-              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900">
-                Administrador
-              </Badge>
+
+            {/* Desktop: Show standard header elements */}
+            <div className="hidden md:flex items-center gap-4">
+              <Button variant="outline" asChild>
+                <Link href="/admin">Volver</Link>
+              </Button>
+              <div className="text-right">
+                <p className="text-sm font-medium">{profile?.full_name}</p>
+                <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900">
+                  Administrador
+                </Badge>
+              </div>
+              <LogoutButton />
             </div>
-            <LogoutButton />
           </div>
         </div>
       </header>
@@ -65,8 +78,8 @@ export default async function AdminCrearRutinaPage() {
           <p className="text-muted-foreground mt-1">Define los ejercicios y asigna la rutina a un entrenador y usuarios.</p>
         </div>
 
-        <CreateRoutineForm 
-          athletes={athletes} 
+        <CreateRoutineForm
+          athletes={athletes}
           trainers={trainers}
           isAdmin={true}
           creatorId={user.id}

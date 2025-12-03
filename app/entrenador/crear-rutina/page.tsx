@@ -57,16 +57,29 @@ export default async function CrearRutinaPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" asChild>
-              <Link href="/entrenador">Volver</Link>
+            {/* Mobile: Show only Back button */}
+            <Button variant="ghost" asChild className="md:hidden">
+              <Link href="/entrenador" className="flex items-center gap-2">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver
+              </Link>
             </Button>
-            <div className="text-right">
-              <p className="text-sm font-medium">{profile?.full_name}</p>
-              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900">
-                Entrenador
-              </Badge>
+
+            {/* Desktop: Show standard header elements */}
+            <div className="hidden md:flex items-center gap-4">
+              <Button variant="outline" asChild>
+                <Link href="/entrenador">Volver</Link>
+              </Button>
+              <div className="text-right">
+                <p className="text-sm font-medium">{profile?.full_name}</p>
+                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900">
+                  Entrenador
+                </Badge>
+              </div>
+              <LogoutButton />
             </div>
-            <LogoutButton />
           </div>
         </div>
       </header>

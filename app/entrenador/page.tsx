@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import { TrainerRoutineCard } from "@/components/trainer-routine-card"
 import Link from "next/link"
+import { TrainerUserFilter } from "@/components/trainer-user-filter"
 
 export default async function EntrenadorPage({ searchParams }: { searchParams?: { userId?: string } }) {
   const supabase = await createClient()
@@ -140,22 +141,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
           </div>
         </div>
         <div className="mb-6">
-          <form method="get" className="flex items-center gap-2">
-            <label className="text-sm">Filtrar por usuario:</label>
-            <select
-              name="userId"
-              defaultValue={searchParams?.userId || ""}
-              className="rounded-md border px-2 py-1"
-            >
-              <option value="">Todos</option>
-              {athletes?.map((a: any) => (
-                <option key={a.id} value={a.id}>
-                  {a.full_name}
-                </option>
-              ))}
-            </select>
-            <Button type="submit">Aplicar</Button>
-          </form>
+          <TrainerUserFilter athletes={athletes || []} />
         </div>
         <div className="grid gap-6 md:grid-cols-3 mb-8">
           <Card>

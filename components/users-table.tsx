@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react"
 
 interface UsersTableProps {
   users: any[]
@@ -35,6 +36,57 @@ export function UsersTable({ users }: UsersTableProps) {
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
   const [role, setRole] = useState<"deportista" | "entrenador" | "administrador">("deportista")
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
+  const [nameFilter, setNameFilter] = useState("")
+  const [roleFilter, setRoleFilter] = useState<string>("all")
+
+  const filteredUsers = users.filter((user) => {
+    const matchesName = user.full_name.toLowerCase().includes(nameFilter.toLowerCase())
+    const matchesRole = roleFilter === "all" || user.role === roleFilter
+    return matchesName && matchesRole
+  })
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (!sortConfig) return 0
+
+    const { key, direction } = sortConfig
+
+    let aValue = a[key]
+    let bValue = b[key]
+
+    // Manejo especial para fechas si es necesario, aunque strings ISO funcionan bien
+    if (key === "full_name") {
+      aValue = aValue.toLowerCase()
+      bValue = bValue.toLowerCase()
+    }
+
+    if (aValue < bValue) {
+      return direction === "asc" ? -1 : 1
+    }
+    if (aValue > bValue) {
+      return direction === "asc" ? 1 : -1
+    }
+    return 0
+  })
+
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc"
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc"
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />
+    }
+    return sortConfig.direction === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    )
+  }
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -251,15 +303,61 @@ export function UsersTable({ users }: UsersTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Rol</TableHead>
-              <TableHead>Fecha de Registro</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead className="min-w-[200px] align-top pt-4">
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => requestSort("full_name")}
+                    className="hover:bg-transparent px-0 font-bold justify-start h-auto p-0"
+                  >
+                    Nombre
+                    {getSortIcon("full_name")}
+                  </Button>
+                  <Input
+                    placeholder="Buscar nombre..."
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    className="h-8 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </TableHead>
+              <TableHead className="align-top pt-4">
+                <div className="flex flex-col gap-2 h-full justify-start">
+                  <span className="font-bold py-1">Email</span>
+                </div>
+              </TableHead>
+              <TableHead className="align-top pt-4">
+                <div className="flex flex-col gap-2">
+                  <span className="font-bold py-0.5">Rol</span>
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="h-8 text-xs w-[130px]">
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="deportista">Deportista</SelectItem>
+                      <SelectItem value="entrenador">Entrenador</SelectItem>
+                      <SelectItem value="administrador">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TableHead>
+              <TableHead className="align-top pt-4">
+                <div className="flex flex-col gap-2">
+                  <Button variant="ghost" onClick={() => requestSort("created_at")} className="hover:bg-transparent px-0 font-bold justify-start h-auto p-0">
+                    Fecha de Registro
+                    {getSortIcon("created_at")}
+                  </Button>
+                </div>
+              </TableHead>
+              <TableHead className="text-right align-top pt-4">
+                <span className="font-bold">Acciones</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {sortedUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
