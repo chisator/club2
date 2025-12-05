@@ -22,10 +22,9 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("es-ES", {
-      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
-      month: "long",
-      day: "numeric",
     })
   }
 
@@ -34,7 +33,7 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg">{routine.title}</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{routine.title}</CardTitle>
             <CardDescription className="mt-1">
               <Badge variant="outline" className="mr-2">
                 {routine.sports?.name}
@@ -62,7 +61,7 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Entrenador: {routine.profiles?.full_name}</p>
+
             <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)}>
               {showDetails ? "Ocultar" : "Ver"} ejercicios
             </Button>
@@ -73,7 +72,7 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
               <p className="text-sm font-semibold">Ejercicios:</p>
               <ul className="space-y-2">
                 {exercises.map((exercise: any, index: number) => (
-                  <li key={index} className="text-sm bg-muted p-3 rounded-md">
+                  <li key={index} className="text-sm bg-muted p-2 sm:p-3 rounded-md">
                     <p className="font-medium">{exercise.name}</p>
                     {exercise.sets && <p className="text-muted-foreground">Series: {exercise.sets}</p>}
                     {exercise.reps && <p className="text-muted-foreground">Repeticiones: {exercise.reps}</p>}

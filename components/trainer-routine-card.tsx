@@ -27,10 +27,9 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("es-ES", {
-      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
-      month: "long",
-      day: "numeric",
     })
   }
 
@@ -67,7 +66,7 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg">{routine.title}</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{routine.title}</CardTitle>
             <CardDescription className="mt-1">
               <Badge variant="outline" className="mr-2">
                 {routine.sports?.name}
@@ -169,7 +168,7 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
               <p className="text-sm font-semibold">Ejercicios:</p>
               <ul className="space-y-2">
                 {exercises.map((exercise: any, index: number) => (
-                  <li key={index} className="text-sm bg-muted p-3 rounded-md">
+                  <li key={index} className="text-sm bg-muted p-2 sm:p-3 rounded-md">
                     <p className="font-medium">{exercise.name}</p>
                     {exercise.sets && <p className="text-muted-foreground">Series: {exercise.sets}</p>}
                     {exercise.reps && <p className="text-muted-foreground">Repeticiones: {exercise.reps}</p>}

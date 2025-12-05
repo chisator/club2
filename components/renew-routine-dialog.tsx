@@ -65,7 +65,7 @@ export function RenewRoutineDialog({ isOpen, onOpenChange, routineId, currentEnd
         <DialogHeader>
           <DialogTitle>Renovar Rutina</DialogTitle>
           <DialogDescription>
-            {currentEndDate ? `Fecha actual de fin: ${new Date(currentEndDate).toLocaleDateString("es-ES")}` : "Extiende el período de esta rutina"}
+            {currentEndDate ? `Fecha actual de fin: ${new Date(currentEndDate).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}` : "Extiende el período de esta rutina"}
           </DialogDescription>
         </DialogHeader>
 

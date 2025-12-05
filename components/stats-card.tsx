@@ -42,7 +42,7 @@ export function StatsCard({ title, value, icon }: StatsCardProps) {
         <div className="text-muted-foreground">{icons[icon]}</div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value}</div>
+        <div className="text-2xl sm:text-3xl font-bold">{value}</div>
       </CardContent>
     </Card>
   )

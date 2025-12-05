@@ -32,25 +32,46 @@ export default async function DeportistaPage() {
 
   const routineIds = routineAssignments?.map((r: any) => r.routine_id) || []
 
+  // Obtener rutinas sin join complejo
   const { data: routines } = routineIds.length
-    ? await supabase.from("routines").select("*").in("id", routineIds).order("end_date", { ascending: true })
+    ? await supabase
+      .from("routines")
+      .select("*")
+      .in("id", routineIds)
+      .order("end_date", { ascending: true })
     : { data: [] }
 
+  // Obtener entrenadores manualmente
+  const trainerIds = Array.from(new Set(routines?.map((r) => r.trainer_id).filter(Boolean))) as string[]
+
+  const { data: trainers } = trainerIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name").in("id", trainerIds)
+    : { data: [] }
+
+  // Mapear entrenadores a rutinas
+  const routinesWithTrainers = routines?.map((routine) => {
+    const trainer = trainers?.find((t) => t.id === routine.trainer_id)
+    return {
+      ...routine,
+      trainer: trainer ? { full_name: trainer.full_name } : null,
+    }
+  })
+
   // Calcular estadísticas
-  const totalRoutines = routines?.length || 0
+  const totalRoutines = routinesWithTrainers?.length || 0
 
   // Filtrar rutinas por fecha
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const upcomingRoutines = routines?.filter((r) => {
+  const upcomingRoutines = routinesWithTrainers?.filter((r) => {
     const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
     if (!routineEnd) return false
     routineEnd.setHours(0, 0, 0, 0)
     return routineEnd >= today
   })
 
-  const pastRoutines = routines?.filter((r) => {
+  const pastRoutines = routinesWithTrainers?.filter((r) => {
     const routineEnd = r.end_date ? new Date(r.end_date) : r.start_date ? new Date(r.start_date) : null
     if (!routineEnd) return false
     routineEnd.setHours(0, 0, 0, 0)
@@ -62,22 +83,26 @@ export default async function DeportistaPage() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden p-4">
+            <div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden p-2 sm:p-4">
               <Image src="/logo.svg" alt="Logo" width={100} height={100} className="object-contain" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">Gimnasio</h1>
-              <p className="text-xs text-muted-foreground">Panel de Usuario</p>
+              <h1 className="text-lg font-bold hidden sm:block">Gimnasio</h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-right">
               <p className="text-sm font-medium">{profile?.full_name}</p>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs hidden sm:inline-flex">
                 Deportista
               </Badge>
             </div>
-            <LogoutButton />
+            <div className="sm:hidden">
+              <LogoutButton iconOnly />
+            </div>
+            <div className="hidden sm:block">
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </header>

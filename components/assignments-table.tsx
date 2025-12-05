@@ -153,7 +153,7 @@ export function AssignmentsTable({ assignments, users }: AssignmentsTableProps) 
                 <TableCell className="font-medium">{assignment.profiles?.full_name}</TableCell>
                 <TableCell>{assignment.profiles?.email}</TableCell>
                 <TableCell>{assignment.trainer?.full_name}</TableCell>
-                <TableCell>{new Date(assignment.created_at).toLocaleDateString("es-ES")}</TableCell>
+                <TableCell>{new Date(assignment.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })}</TableCell>
                 <TableCell>
                   <Button
                     variant="ghost"

@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
-export function LogoutButton() {
+import { LogOut } from "lucide-react"
+
+interface LogoutButtonProps {
+  className?: string
+  iconOnly?: boolean
+}
+
+export function LogoutButton({ className, iconOnly = false }: LogoutButtonProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -18,8 +25,20 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="outline" onClick={handleLogout} disabled={isLoading}>
-      {isLoading ? "Cerrando sesión..." : "Cerrar Sesión"}
+    <Button
+      variant="outline"
+      onClick={handleLogout}
+      disabled={isLoading}
+      className={className}
+      size={iconOnly ? "icon" : "default"}
+    >
+      {isLoading ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : iconOnly ? (
+        <LogOut className="h-4 w-4" />
+      ) : (
+        "Cerrar Sesión"
+      )}
     </Button>
   )
 }

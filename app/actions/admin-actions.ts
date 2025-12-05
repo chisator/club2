@@ -77,6 +77,36 @@ export async function createUser(formData: {
       console.log("[v0] Warning: could not upsert profile:", e)
     }
 
+    // Asignación automática a todos los entrenadores si es deportista
+    if (formData.role === "deportista") {
+      try {
+        // Obtener todos los entrenadores
+        const { data: trainers, error: trainersError } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("role", "entrenador")
+
+        if (trainersError) {
+          console.error("[v0] Error fetching trainers for auto-assignment:", trainersError)
+        } else if (trainers && trainers.length > 0) {
+          const assignments = trainers.map((trainer) => ({
+            user_id: newUser.user?.id,
+            trainer_id: trainer.id,
+          }))
+
+          const { error: assignError } = await supabaseAdmin.from("trainer_user_assignments").insert(assignments)
+
+          if (assignError) {
+            console.error("[v0] Error auto-assigning user to trainers:", assignError)
+          } else {
+            console.log(`[v0] User ${newUser.user?.id} assigned to ${trainers.length} trainers automatically.`)
+          }
+        }
+      } catch (assignCatchError) {
+        console.error("[v0] Unexpected error in auto-assignment:", assignCatchError)
+      }
+    }
+
     revalidatePath("/admin")
 
     return { success: true, user: newUser }

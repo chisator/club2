@@ -157,7 +157,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{totalRoutines}</div>
+              <div className="text-2xl sm:text-3xl font-bold">{totalRoutines}</div>
             </CardContent>
           </Card>
 
@@ -174,7 +174,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{upcomingRoutines.length}</div>
+              <div className="text-2xl sm:text-3xl font-bold">{upcomingRoutines.length}</div>
             </CardContent>
           </Card>
 
@@ -191,7 +191,7 @@ export default async function EntrenadorPage({ searchParams }: { searchParams?: 
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{totalAssignedUsers}</div>
+              <div className="text-2xl sm:text-3xl font-bold">{totalAssignedUsers}</div>
               <p className="text-xs text-muted-foreground">Usuarios asignados a ti</p>
             </CardContent>
           </Card>
