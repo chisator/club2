@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useState, useRef, useEffect } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Link from "next/link"
 import { deleteRoutine } from "@/app/actions/trainer-actions"
 import { RenewRoutineDialog } from "@/components/renew-routine-dialog"
@@ -89,17 +90,62 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        {routine.description && <p className="text-sm text-muted-foreground mb-4">{routine.description}</p>}
 
-        <div className="space-y-2">
+
+      <CardContent className="flex flex-col flex-1">
+        {routine.description && (
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{routine.description}</p>
+        )}
+
+        <div className="mt-auto space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium">{exercises.length} ejercicios</p>
             <div className="relative">
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)} className="text-xs sm:text-sm">
-                  {showDetails ? "Ocultar" : "Ver"} detalles
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                      Ver detalles
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>{routine.title}</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                      {routine.description && (
+                        <div>
+                          <h4 className="font-semibold mb-1 text-sm">Descripción</h4>
+                          <p className="text-sm text-muted-foreground">{routine.description}</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="font-semibold mb-2 text-sm">Ejercicios</h4>
+                        {exercises.length > 0 ? (
+                          <ul className="space-y-3">
+                            {exercises.map((exercise: any, index: number) => (
+                              <li key={index} className="text-sm bg-muted p-3 rounded-md">
+                                <p className="font-medium text-base">{exercise.name}</p>
+                                <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
+                                  {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
+                                  {exercise.reps && <p className="text-muted-foreground">Reps: <span className="text-foreground">{exercise.reps}</span></p>}
+                                  {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}</span></p>}
+                                  {exercise.duration && <p className="text-muted-foreground">Duración: <span className="text-foreground">{exercise.duration}</span></p>}
+                                </div>
+                                {exercise.notes && <p className="text-muted-foreground mt-2 text-xs italic">{exercise.notes}</p>}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No hay ejercicios detallados.</p>
+                        )}
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
                   <Link href={`/entrenador/editar-rutina/${routine.id}`}>Editar</Link>
                 </Button>
@@ -162,24 +208,6 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
               </div>
             </div>
           </div>
-
-          {showDetails && exercises.length > 0 && (
-            <div className="mt-4 space-y-2 border-t pt-4">
-              <p className="text-sm font-semibold">Ejercicios:</p>
-              <ul className="space-y-2">
-                {exercises.map((exercise: any, index: number) => (
-                  <li key={index} className="text-sm bg-muted p-2 sm:p-3 rounded-md">
-                    <p className="font-medium">{exercise.name}</p>
-                    {exercise.sets && <p className="text-muted-foreground">Series: {exercise.sets}</p>}
-                    {exercise.reps && <p className="text-muted-foreground">Repeticiones: {exercise.reps}</p>}
-                    {exercise.weight && <p className="text-muted-foreground">Peso: {exercise.weight}</p>}
-                    {exercise.duration && <p className="text-muted-foreground">Duración: {exercise.duration}</p>}
-                    {exercise.notes && <p className="text-muted-foreground mt-1">{exercise.notes}</p>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </CardContent>
 

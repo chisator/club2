@@ -11,6 +11,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 interface EditRoutineFormProps {
   routine: any
@@ -25,10 +40,14 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [openCombobox, setOpenCombobox] = useState(false)
 
   const [title, setTitle] = useState(routine.title)
   const [description, setDescription] = useState(routine.description || "")
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(assignedUserIds || (routine.user_id ? [routine.user_id] : []))
+  // Change to single user selection. Use first assigned user or routine.user_id
+  const initialUserId = assignedUserIds.length > 0 ? assignedUserIds[0] : (routine.user_id || "")
+  const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId)
+
   // If admin, allow changing trainer
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>(routine.trainer_id)
   const [startDate, setStartDate] = useState(
@@ -36,6 +55,9 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   )
   const [endDate, setEndDate] = useState(routine.end_date ? String(routine.end_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : "")
   const [exercises, setExercises] = useState(routine.exercises || [])
+
+  // Sort athletes alphabetically
+  const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   const addExercise = () => {
     setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
@@ -56,9 +78,9 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
     setIsLoading(true)
     setError(null)
 
-    // Validar que se seleccionó al menos un usuario
-    if (!selectedUserIds || selectedUserIds.length === 0) {
-      setError("Debes seleccionar al menos un usuario")
+    // Validar que se seleccionó un usuario
+    if (!selectedUserId) {
+      setError("Debes seleccionar un usuario deportista")
       setIsLoading(false)
       return
     }
@@ -80,7 +102,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
       routineId: routine.id,
       title,
       description,
-      userIds: selectedUserIds,
+      userIds: [selectedUserId], // Send as array with single item for compatibility
       startDate,
       endDate,
       exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
@@ -136,24 +158,52 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
             </div>
 
             <div className="grid gap-2">
-              <Label>Usuarios Deportistas</Label>
-              <div className="grid gap-2">
-                {athletes.length === 0 && <p className="text-sm text-muted-foreground">No tienes usuarios asignados</p>}
-                {athletes.map((athlete) => (
-                  <label key={athlete.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedUserIds.includes(athlete.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedUserIds([...selectedUserIds, athlete.id])
-                        else setSelectedUserIds(selectedUserIds.filter((id) => id !== athlete.id))
-                      }}
-                      className="accent-emerald-600"
-                    />
-                    <span className="text-sm">{athlete.full_name} ({athlete.email})</span>
-                  </label>
-                ))}
-              </div>
+              <Label>Usuario Deportista</Label>
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    className="w-full justify-between"
+                    type="button"
+                  >
+                    {selectedUserId
+                      ? sortedAthletes.find((athlete) => athlete.id === selectedUserId)?.full_name
+                      : "Seleccionar deportista..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar deportista..." />
+                    <CommandList>
+                      <CommandEmpty>No se encontró deportista.</CommandEmpty>
+                      <CommandGroup>
+                        {sortedAthletes.map((athlete) => (
+                          <CommandItem
+                            key={athlete.id}
+                            value={athlete.full_name.toLowerCase()}
+                            onSelect={() => {
+                              setSelectedUserId(athlete.id === selectedUserId ? "" : athlete.id)
+                              setOpenCombobox(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedUserId === athlete.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {athlete.full_name} ({athlete.email})
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {athletes.length === 0 && <p className="text-sm text-muted-foreground">No tienes usuarios asignados</p>}
             </div>
           </div>
 

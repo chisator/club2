@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
@@ -56,34 +57,55 @@ export function RoutineCard({ routine, attendance, athleteId, isPast = false }: 
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        {routine.description && <p className="text-sm text-muted-foreground mb-4">{routine.description}</p>}
+      <CardContent className="flex flex-col flex-1">
+        {routine.description && (
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{routine.description}</p>
+        )}
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="mt-auto">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full">
+                Ver detalles y ejercicios
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{routine.title}</DialogTitle>
+              </DialogHeader>
 
-            <Button variant="ghost" size="sm" onClick={() => setShowDetails(!showDetails)}>
-              {showDetails ? "Ocultar" : "Ver"} ejercicios
-            </Button>
-          </div>
+              <div className="space-y-4">
+                {routine.description && (
+                  <div>
+                    <h4 className="font-semibold mb-1 text-sm">Descripción</h4>
+                    <p className="text-sm text-muted-foreground">{routine.description}</p>
+                  </div>
+                )}
 
-          {showDetails && exercises.length > 0 && (
-            <div className="mt-4 space-y-2 border-t pt-4">
-              <p className="text-sm font-semibold">Ejercicios:</p>
-              <ul className="space-y-2">
-                {exercises.map((exercise: any, index: number) => (
-                  <li key={index} className="text-sm bg-muted p-2 sm:p-3 rounded-md">
-                    <p className="font-medium">{exercise.name}</p>
-                    {exercise.sets && <p className="text-muted-foreground">Series: {exercise.sets}</p>}
-                    {exercise.reps && <p className="text-muted-foreground">Repeticiones: {exercise.reps}</p>}
-                    {exercise.weight && <p className="text-muted-foreground">Peso: {exercise.weight}</p>}
-                    {exercise.duration && <p className="text-muted-foreground">Duración: {exercise.duration}</p>}
-                    {exercise.notes && <p className="text-muted-foreground mt-1">{exercise.notes}</p>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                <div>
+                  <h4 className="font-semibold mb-2 text-sm">Ejercicios</h4>
+                  {exercises.length > 0 ? (
+                    <ul className="space-y-3">
+                      {exercises.map((exercise: any, index: number) => (
+                        <li key={index} className="text-sm bg-muted p-3 rounded-md">
+                          <p className="font-medium text-base">{exercise.name}</p>
+                          <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
+                            {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
+                            {exercise.reps && <p className="text-muted-foreground">Reps: <span className="text-foreground">{exercise.reps}</span></p>}
+                            {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}</span></p>}
+                            {exercise.duration && <p className="text-muted-foreground">Duración: <span className="text-foreground">{exercise.duration}</span></p>}
+                          </div>
+                          {exercise.notes && <p className="text-muted-foreground mt-2 text-xs italic">{exercise.notes}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No hay ejercicios detallados.</p>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>
