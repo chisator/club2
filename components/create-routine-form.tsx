@@ -28,6 +28,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { ExerciseAutosuggest, ExerciseCatalogItem } from "@/components/exercise-selector"
+import { SmartNumberInput } from "@/components/smart-number-input"
 
 interface Exercise {
   name: string
@@ -36,19 +38,20 @@ interface Exercise {
   weight?: string
   duration?: string
   notes?: string
+  video_url?: string
 }
 
 interface CreateRoutineFormProps {
   athletes: any[]
-  // trainerId is now creatorId
   creatorId: string
-  // For admins, a list of trainers to choose from
   trainers?: any[]
   isAdmin?: boolean
+  exerciseCatalog: ExerciseCatalogItem[]
 }
 
-export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin = false }: CreateRoutineFormProps) {
+export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin = false, exerciseCatalog = [] }: CreateRoutineFormProps) {
   const router = useRouter()
+  // ... (maintain existing state)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
@@ -56,19 +59,16 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  // For admin: to select which trainer the routine belongs to
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>(isAdmin ? "" : creatorId)
-  // Changed to single selection
   const [selectedUserId, setSelectedUserId] = useState<string>("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
+  const [exercises, setExercises] = useState<Exercise[]>([{ name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "" }])
 
-  // Sort athletes alphabetically
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "" }])
   }
 
   const removeExercise = (index: number) => {
@@ -81,15 +81,24 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     setExercises(newExercises)
   }
 
+  const handleExerciseNameSelect = (index: number, item: ExerciseCatalogItem) => {
+    const newExercises = [...exercises]
+    // Update name
+    newExercises[index] = { ...newExercises[index], name: item.name }
+
+    // Auto-fill video if available and current is empty
+    if (item.video_url && !newExercises[index].video_url) {
+      newExercises[index].video_url = item.video_url
+    }
+    setExercises(newExercises)
+  }
+
+  // ... (maintain handleImportExercises and handleSubmit)
   const handleImportExercises = (importedExercises: Exercise[]) => {
-    // Reemplazar la lista actual de ejercicios con los importados
-    // Mantener el primer ejercicio vacío si es que viene vacío, y añadir los importados
     const currentEmpty = exercises.filter((ex) => ex.name.trim() === "")
     if (currentEmpty.length === exercises.length) {
-      // Si todos los ejercicios están vacíos, reemplazar completamente
       setExercises(importedExercises)
     } else {
-      // Si hay ejercicios, concatenar los importados
       setExercises([...exercises, ...importedExercises])
     }
   }
@@ -99,14 +108,12 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     setIsLoading(true)
     setError(null)
 
-    // Validar que se seleccionó un usuario
     if (!selectedUserId) {
       setError("Debes seleccionar un usuario deportista")
       setIsLoading(false)
       return
     }
 
-    // Validar fechas
     if (!startDate || !endDate) {
       setError("Debes seleccionar fecha de inicio y fin")
       setIsLoading(false)
@@ -120,27 +127,36 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     }
 
     try {
-      // Filtrar ejercicios vacíos
       const validExercises = exercises.filter((ex) => ex.name.trim() !== "")
 
-      // Llamar a la acción del servidor que crea la rutina y asignaciones
+      console.log("Calling importRoutine with:", {
+        title,
+        description,
+        start_date: startDate ? new Date(startDate).toISOString() : "",
+        end_date: endDate ? new Date(endDate).toISOString() : "",
+        exercises: validExercises,
+        userIds: [selectedUserId],
+        trainerId: selectedTrainerId,
+      })
+
       const result = await importRoutine({
         title,
         description,
         start_date: startDate ? new Date(startDate).toISOString() : "",
         end_date: endDate ? new Date(endDate).toISOString() : "",
         exercises: validExercises,
-        userIds: [selectedUserId], // Pass as array for compatibility
-        // Pass the selected trainerId if admin is creating
+        userIds: [selectedUserId],
         trainerId: selectedTrainerId,
       })
 
+      console.log("importRoutine result:", result)
+
+      if (!result) {
+        throw new Error("El servidor no devolvió respuesta (result is undefined)")
+      }
+
       if (result.error) throw new Error(result.error)
 
-      // show diagnostic info in console for debugging
-      console.log("Routine created:", result)
-
-      // Navigate back to trainer dashboard or admin dashboard
       router.push(isAdmin ? "/admin" : "/entrenador")
       router.refresh()
     } catch (err: any) {
@@ -158,7 +174,7 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
           <CardDescription>Completa los datos básicos de la rutina</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-
+          {/* ... (Existing fields for trainer, title, description, user, dates) */}
           {isAdmin && (
             <div className="grid gap-2">
               <Label htmlFor="trainer">Entrenador Responsable</Label>
@@ -293,46 +309,49 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
-                  <Input
-                    id={`exercise-name-${index}`}
-                    placeholder="Ej: Sentadillas"
+                  <ExerciseAutosuggest
                     value={exercise.name}
-                    onChange={(e) => updateExercise(index, "name", e.target.value)}
-                    required
+                    onChange={(val) => updateExercise(index, "name", val)}
+                    onSelectCatalogItem={(item) => handleExerciseNameSelect(index, item)}
+                    catalog={exerciseCatalog}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
-                    <Input
-                      id={`exercise-sets-${index}`}
+                    <SmartNumberInput
+                      value={exercise.sets || ""}
+                      onChange={(val) => updateExercise(index, "sets", val)}
                       placeholder="Ej: 3"
-                      value={exercise.sets}
-                      onChange={(e) => updateExercise(index, "sets", e.target.value)}
+                      suggestions={[3, 4, 5]}
                     />
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-reps-${index}`}>Repeticiones</Label>
-                    <Input
-                      id={`exercise-reps-${index}`}
+                    <SmartNumberInput
+                      value={exercise.reps || ""}
+                      onChange={(val) => updateExercise(index, "reps", val)}
                       placeholder="Ej: 10"
-                      value={exercise.reps}
-                      onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                      suggestions={[8, 10, 12, 15]}
                     />
                   </div>
-
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
-                    <Input
-                      id={`exercise-weight-${index}`}
-                      placeholder="Ej: 20kg"
-                      value={exercise.weight}
-                      onChange={(e) => updateExercise(index, "weight", e.target.value)}
-                    />
+                    <div className="relative">
+                      <Input
+                        id={`exercise-weight-${index}`}
+                        placeholder="Ej: 20"
+                        value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
+                        onChange={(e) => updateExercise(index, "weight", e.target.value)}
+                        className="pr-8"
+                        type="number"
+                        step="0.5"
+                      />
+                      <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                    </div>
                   </div>
-
                   <div className="grid gap-2">
                     <Label htmlFor={`exercise-duration-${index}`}>Duración</Label>
                     <Input
@@ -342,6 +361,16 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
                       onChange={(e) => updateExercise(index, "duration", e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor={`exercise-video-${index}`}>Video URL (YouTube)</Label>
+                  <Input
+                    id={`exercise-video-${index}`}
+                    placeholder="Ej: https://youtu.be/..."
+                    value={exercise.video_url || ""}
+                    onChange={(e) => updateExercise(index, "video_url", e.target.value)}
+                  />
                 </div>
 
                 <div className="grid gap-2">
@@ -383,4 +412,3 @@ export function CreateRoutineForm({ athletes, creatorId, trainers = [], isAdmin 
     </form>
   )
 }
-

@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ExerciseAutosuggest, ExerciseCatalogItem } from "@/components/exercise-selector"
+import { SmartNumberInput } from "@/components/smart-number-input"
 import {
   Command,
   CommandEmpty,
@@ -31,24 +33,22 @@ interface EditRoutineFormProps {
   routine: any
   athletes: any[]
   assignedUserIds?: string[]
-  // New props for admin view
   isAdmin?: boolean
   trainers?: any[]
+  exerciseCatalog: ExerciseCatalogItem[]
 }
 
-export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdmin = false, trainers = [] }: EditRoutineFormProps) {
+export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdmin = false, trainers = [], exerciseCatalog = [] }: EditRoutineFormProps) {
   const router = useRouter()
+  // ... (maintain existing state)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [openCombobox, setOpenCombobox] = useState(false)
 
   const [title, setTitle] = useState(routine.title)
   const [description, setDescription] = useState(routine.description || "")
-  // Change to single user selection. Use first assigned user or routine.user_id
   const initialUserId = assignedUserIds.length > 0 ? assignedUserIds[0] : (routine.user_id || "")
   const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId)
-
-  // If admin, allow changing trainer
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>(routine.trainer_id)
   const [startDate, setStartDate] = useState(
     routine.start_date ? String(routine.start_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : ""
@@ -56,11 +56,10 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
   const [endDate, setEndDate] = useState(routine.end_date ? String(routine.end_date).split("T")[0] : routine.scheduled_date ? String(routine.scheduled_date).split("T")[0] : "")
   const [exercises, setExercises] = useState(routine.exercises || [])
 
-  // Sort athletes alphabetically
   const sortedAthletes = [...athletes].sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   const addExercise = () => {
-    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "" }])
+    setExercises([...exercises, { name: "", sets: "", reps: "", weight: "", duration: "", notes: "", video_url: "" }])
   }
 
   const removeExercise = (index: number) => {
@@ -73,19 +72,26 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
     setExercises(newExercises)
   }
 
+  const handleExerciseNameSelect = (index: number, item: ExerciseCatalogItem) => {
+    const newExercises = [...exercises]
+    newExercises[index].name = item.name
+    if (item.video_url && !newExercises[index].video_url) {
+      newExercises[index].video_url = item.video_url
+    }
+    setExercises(newExercises)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
 
-    // Validar que se seleccionó un usuario
     if (!selectedUserId) {
       setError("Debes seleccionar un usuario deportista")
       setIsLoading(false)
       return
     }
 
-    // Validar fechas
     if (!startDate || !endDate) {
       setError("Debes seleccionar fecha de inicio y fin")
       setIsLoading(false)
@@ -102,13 +108,18 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
       routineId: routine.id,
       title,
       description,
-      userIds: [selectedUserId], // Send as array with single item for compatibility
+      userIds: [selectedUserId],
       startDate,
       endDate,
       exercises: exercises.filter((ex: any) => ex.name.trim() !== ""),
-      // Pass selectedTrainerId if admin is editing
       trainerId: selectedTrainerId,
     })
+
+    if (!result) {
+      setError("El servidor no devolvió respuesta")
+      setIsLoading(false)
+      return
+    }
 
     if (result.error) {
       setError(result.error)
@@ -192,7 +203,7 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                selectedUserId === athlete.id ? "opacity-100" : "opacity-0"
+                                "opacity-100"
                               )}
                             />
                             {athlete.full_name} ({athlete.email})
@@ -244,12 +255,11 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 grid gap-2">
                         <Label htmlFor={`exercise-name-${index}`}>Nombre del Ejercicio</Label>
-                        <Input
-                          id={`exercise-name-${index}`}
-                          placeholder="Ej: Sentadillas"
+                        <ExerciseAutosuggest
                           value={exercise.name}
-                          onChange={(e) => updateExercise(index, "name", e.target.value)}
-                          required
+                          onChange={(val) => updateExercise(index, "name", val)}
+                          onSelectCatalogItem={(item) => handleExerciseNameSelect(index, item)}
+                          catalog={exerciseCatalog}
                         />
                       </div>
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeExercise(index)}>
@@ -257,35 +267,41 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                       </Button>
                     </div>
 
-                    <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                    <div className="grid gap-4 grid-cols-2">
                       <div className="grid gap-2">
                         <Label htmlFor={`exercise-sets-${index}`}>Series</Label>
-                        <Input
-                          id={`exercise-sets-${index}`}
+                        <SmartNumberInput
+                          value={exercise.sets || ""}
+                          onChange={(val) => updateExercise(index, "sets", val)}
                           placeholder="Ej: 3"
-                          value={exercise.sets}
-                          onChange={(e) => updateExercise(index, "sets", e.target.value)}
+                          suggestions={[3, 4, 5]}
                         />
                       </div>
 
                       <div className="grid gap-2">
                         <Label htmlFor={`exercise-reps-${index}`}>Repeticiones</Label>
-                        <Input
-                          id={`exercise-reps-${index}`}
-                          placeholder="Ej: 12"
-                          value={exercise.reps}
-                          onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                        <SmartNumberInput
+                          value={exercise.reps || ""}
+                          onChange={(val) => updateExercise(index, "reps", val)}
+                          placeholder="Ej: 10"
+                          suggestions={[8, 10, 12, 15]}
                         />
                       </div>
 
                       <div className="grid gap-2">
                         <Label htmlFor={`exercise-weight-${index}`}>Peso</Label>
-                        <Input
-                          id={`exercise-weight-${index}`}
-                          placeholder="Ej: 20kg"
-                          value={exercise.weight}
-                          onChange={(e) => updateExercise(index, "weight", e.target.value)}
-                        />
+                        <div className="relative">
+                          <Input
+                            id={`exercise-weight-${index}`}
+                            placeholder="Ej: 20"
+                            value={exercise.weight?.replace(/ ?kg$/i, "") || ""}
+                            onChange={(e) => updateExercise(index, "weight", e.target.value)}
+                            className="pr-8"
+                            type="number"
+                            step="0.5"
+                          />
+                          <span className="absolute right-3 top-2.5 text-sm text-muted-foreground pointer-events-none">kg</span>
+                        </div>
                       </div>
 
                       <div className="grid gap-2">
@@ -297,6 +313,16 @@ export function EditRoutineForm({ routine, athletes, assignedUserIds = [], isAdm
                           onChange={(e) => updateExercise(index, "duration", e.target.value)}
                         />
                       </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor={`exercise-video-${index}`}>Video URL (YouTube)</Label>
+                      <Input
+                        id={`exercise-video-${index}`}
+                        placeholder="Ej: https://youtu.be/..."
+                        value={exercise.video_url || ""}
+                        onChange={(e) => updateExercise(index, "video_url", e.target.value)}
+                      />
                     </div>
 
                     <div className="grid gap-2">

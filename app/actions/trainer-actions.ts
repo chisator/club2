@@ -34,18 +34,25 @@ export async function updateRoutine(formData: {
       exercises: formData.exercises,
     }
 
-    if (formData.startDate) updatePayload.start_date = new Date(formData.startDate).toISOString()
-    if (formData.endDate) updatePayload.end_date = new Date(formData.endDate).toISOString()
+    const normalizeDate = (d: string) => {
+      if (!d) return null
+      // Ensure we only have YYYY-MM-DD element
+      const datePart = d.toString().split("T")[0]
+      return new Date(`${datePart}T12:00:00Z`).toISOString()
+    }
+
+    if (formData.startDate) updatePayload.start_date = normalizeDate(formData.startDate)
+    if (formData.endDate) updatePayload.end_date = normalizeDate(formData.endDate)
     // If admin is updating, they can change the trainer_id
     if (userRole === 'administrador' && formData.trainerId) {
-        updatePayload.trainer_id = formData.trainerId
+      updatePayload.trainer_id = formData.trainerId
     }
 
     let query = supabase.from("routines").update(updatePayload).eq("id", formData.routineId)
 
     // If not admin, restrict update to their own routines
     if (userRole !== "administrador") {
-        query = query.eq("trainer_id", user.id)
+      query = query.eq("trainer_id", user.id)
     }
 
     const { error: updateError } = await query
@@ -62,7 +69,7 @@ export async function updateRoutine(formData: {
 
       if (formData.userIds.length > 0) {
         const rows = formData.userIds.map((uid) => ({
-          routine_id: formData.routineId, 
+          routine_id: formData.routineId,
           user_id: uid
         }))
         const { error: insError } = await supabase.from("routine_user_assignments").insert(rows)
@@ -96,7 +103,7 @@ export async function deleteRoutine(routineId: string) {
 
     // If not admin, restrict deletion to their own routines
     if (userRole !== "administrador") {
-        query = query.eq("trainer_id", user.id)
+      query = query.eq("trainer_id", user.id)
     }
 
     const { error } = await query
@@ -147,7 +154,8 @@ export async function renewRoutine({
     let newEnd: Date | null = null
 
     if (newEndDate) {
-      newEnd = new Date(newEndDate)
+      // Ensure specific date is set to Noon UTC
+      newEnd = new Date(`${newEndDate.toString().split("T")[0]}T12:00:00Z`)
     } else if (months && months > 0) {
       // Baseamos la extensión en la fecha de fin actual si existe, o en hoy
       const base = routine.end_date ? new Date(routine.end_date) : new Date()
@@ -156,6 +164,8 @@ export async function renewRoutine({
       const from = base < now ? now : base
       newEnd = new Date(from)
       newEnd.setMonth(newEnd.getMonth() + months)
+      // Force calculated date to Noon UTC to match standard
+      newEnd.setUTCHours(12, 0, 0, 0)
     } else {
       return { error: "Indica meses a extender o una nueva fecha de fin" }
     }
@@ -235,6 +245,7 @@ export async function importRoutine(formData: {
   // New optional field for admin
   trainerId?: string
 }) {
+  console.log("SERVER ACTION: importRoutine called with", JSON.stringify({ ...formData, exercises: `${formData.exercises?.length} exercises` }))
   try {
     const supabase = await createServerClient()
     const {
@@ -251,8 +262,8 @@ export async function importRoutine(formData: {
     // If admin is creating, trainerId must be provided.
     // If trainer is creating, it's their own user.id.
     const trainer_id = userRole === 'administrador' ? formData.trainerId : user.id
-    if(!trainer_id) {
-        return { error: "Como administrador, debes seleccionar un entrenador." }
+    if (!trainer_id) {
+      return { error: "Como administrador, debes seleccionar un entrenador." }
     }
 
     // Crear rutina
@@ -262,8 +273,8 @@ export async function importRoutine(formData: {
         title: formData.title,
         description: formData.description,
         trainer_id: trainer_id,
-        start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
-        end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
+        start_date: formData.start_date ? new Date(`${formData.start_date.toString().split("T")[0]}T12:00:00Z`).toISOString() : null,
+        end_date: formData.end_date ? new Date(`${formData.end_date.toString().split("T")[0]}T12:00:00Z`).toISOString() : null,
         exercises: formData.exercises,
       })
       .select("id")

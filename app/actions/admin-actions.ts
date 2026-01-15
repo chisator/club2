@@ -246,3 +246,97 @@ export async function deleteUser(userId: string) {
     return { error: error.message || "Error al eliminar usuario" }
   }
 }
+
+// --- GESTIÓN DE CATÁLOGO DE EJERCICIOS ---
+
+export async function getExerciseCatalog() {
+  try {
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
+      .from("exercise_catalog")
+      .select("*")
+      .order("name", { ascending: true })
+
+    if (error) {
+      console.error("Error fetching exercise catalog:", error)
+      return { error: error.message }
+    }
+
+    return { success: true, exercises: data || [] }
+  } catch (error: any) {
+    return { error: error.message || "Error al obtener ejercicios" }
+  }
+}
+
+export async function createExerciseCatalogItem(formData: { name: string; video_url?: string }) {
+  try {
+    const supabase = await createServerClient()
+
+    // Validar permisos (solo admin o entrenador podrían, asumimos admin por ubicación de archivo, 
+    // pero idealmente deberíamos chequear rol. Por ahora confiamos en middleware/layout protection)
+    // O mejor, chequeamos usuario auth básica.
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: "No autenticado" }
+
+    const { data, error } = await supabase
+      .from("exercise_catalog")
+      .insert({
+        name: formData.name,
+        video_url: formData.video_url,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    revalidatePath("/admin/ejercicios") // Path que crearemos
+    return { success: true, exercise: data }
+  } catch (error: any) {
+    return { error: error.message || "Error al crear ejercicio" }
+  }
+}
+
+export async function updateExerciseCatalogItem(formData: { id: string; name: string; video_url?: string }) {
+  try {
+    const supabase = await createServerClient()
+
+    const { error } = await supabase
+      .from("exercise_catalog")
+      .update({
+        name: formData.name,
+        video_url: formData.video_url,
+      })
+      .eq("id", formData.id)
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    revalidatePath("/admin/ejercicios")
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || "Error al actualizar ejercicio" }
+  }
+}
+
+export async function deleteExerciseCatalogItem(id: string) {
+  try {
+    const supabase = await createServerClient()
+
+    const { error } = await supabase
+      .from("exercise_catalog")
+      .delete()
+      .eq("id", id)
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    revalidatePath("/admin/ejercicios")
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || "Error al eliminar ejercicio" }
+  }
+}

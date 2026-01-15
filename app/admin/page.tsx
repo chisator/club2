@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UsersTable } from "@/components/users-table"
 import { AssignmentsTable } from "@/components/assignments-table"
 import { RoutinesTable } from "@/components/routines-table"
+import Link from "next/link"
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -183,6 +184,25 @@ export default async function AdminPage() {
               <div className="text-3xl font-bold">{totalRoutines}</div>
             </CardContent>
           </Card>
+
+          <Link href="/admin/ejercicios">
+            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-dashed">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Catálogo Ejercicios</CardTitle>
+                <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  Gestionar biblioteca
+                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
@@ -199,7 +219,7 @@ export default async function AdminPage() {
           <TabsContent value="assignments">
             <AssignmentsTable assignments={assignments || []} users={users || []} />
           </TabsContent>
-          
+
           <TabsContent value="routines">
             <RoutinesTable routines={routines || []} trainers={users?.filter(u => u.role === 'entrenador') || []} />
           </TabsContent>

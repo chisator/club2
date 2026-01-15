@@ -15,6 +15,61 @@ interface TrainerRoutineCardProps {
   isPast?: boolean
 }
 
+// Helper component for individual exercise items with video toggle
+function ExerciseItem({ exercise }: { exercise: any }) {
+  const [showVideo, setShowVideo] = useState(false)
+
+  const getYouTubeId = (url: string) => {
+    if (!url) return null
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+    const match = url.match(regExp)
+    return (match && match[2].length === 11) ? match[2] : null
+  }
+
+  const videoId = getYouTubeId(exercise.video_url)
+
+  return (
+    <li className="text-sm bg-muted p-3 rounded-md">
+      <p className="font-medium text-base">{exercise.name}</p>
+      <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
+        {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
+        {exercise.reps && <p className="text-muted-foreground">Reps: <span className="text-foreground">{exercise.reps}</span></p>}
+        {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}{!exercise.weight.toLowerCase().includes("kg") && " kg"}</span></p>}
+        {exercise.duration && <p className="text-muted-foreground">Duración: <span className="text-foreground">{exercise.duration}</span></p>}
+      </div>
+
+      {videoId && (
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowVideo(!showVideo)}
+            className="w-full text-xs h-8 mb-2"
+          >
+            {showVideo ? "Ocultar video" : "Ver video tutorial"}
+          </Button>
+
+          {showVideo && (
+            <div className="aspect-video w-full rounded-md overflow-hidden bg-black/10">
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title={exercise.name}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          )}
+        </div>
+      )}
+
+      {exercise.notes && <p className="text-muted-foreground mt-2 text-xs italic">{exercise.notes}</p>}
+    </li>
+  )
+}
+
 export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCardProps) {
   const [showDetails, setShowDetails] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -126,16 +181,7 @@ export function TrainerRoutineCard({ routine, isPast = false }: TrainerRoutineCa
                         {exercises.length > 0 ? (
                           <ul className="space-y-3">
                             {exercises.map((exercise: any, index: number) => (
-                              <li key={index} className="text-sm bg-muted p-3 rounded-md">
-                                <p className="font-medium text-base">{exercise.name}</p>
-                                <div className="grid grid-cols-2 gap-2 mt-2 text-xs sm:text-sm">
-                                  {exercise.sets && <p className="text-muted-foreground">Series: <span className="text-foreground">{exercise.sets}</span></p>}
-                                  {exercise.reps && <p className="text-muted-foreground">Reps: <span className="text-foreground">{exercise.reps}</span></p>}
-                                  {exercise.weight && <p className="text-muted-foreground">Peso: <span className="text-foreground">{exercise.weight}</span></p>}
-                                  {exercise.duration && <p className="text-muted-foreground">Duración: <span className="text-foreground">{exercise.duration}</span></p>}
-                                </div>
-                                {exercise.notes && <p className="text-muted-foreground mt-2 text-xs italic">{exercise.notes}</p>}
-                              </li>
+                              <ExerciseItem key={index} exercise={exercise} />
                             ))}
                           </ul>
                         ) : (

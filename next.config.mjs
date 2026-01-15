@@ -14,7 +14,18 @@ const withPWA = withPWAInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  // 1. ESTO ES VITAL PARA DOCKER
+  output: 'standalone', 
+
+  // 2. IMPORTANTE: Si usas <Image /> con fotos de Supabase, agrega esto:
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co', // Permite cargar imágenes desde Supabase
+      },
+    ],
+  },
 };
 
 export default withPWA(nextConfig);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import { CreateRoutineForm } from "@/components/create-routine-form"
 import Link from "next/link"
+import { getExerciseCatalog } from "@/app/actions/admin-actions"
 
 export default async function CrearRutinaPage() {
   const supabase = await createClient()
@@ -35,6 +36,8 @@ export default async function CrearRutinaPage() {
   const { data: athletes } = userIds.length
     ? await supabase.from("profiles").select("*").in("id", userIds).order("full_name")
     : { data: [] }
+
+  const { exercises: exerciseCatalog } = await getExerciseCatalog()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-gray-900 dark:to-gray-800">
@@ -90,7 +93,7 @@ export default async function CrearRutinaPage() {
           <p className="text-muted-foreground mt-1">Define los ejercicios y asigna la rutina a un usuario</p>
         </div>
 
-        <CreateRoutineForm athletes={athletes || []} creatorId={user.id} />
+        <CreateRoutineForm athletes={athletes || []} creatorId={user.id} exerciseCatalog={exerciseCatalog || []} />
       </main>
     </div>
   )
