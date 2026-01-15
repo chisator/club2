@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import { CreateRoutineForm } from "@/components/create-routine-form"
 import Link from "next/link"
+import { getExerciseCatalog } from "@/app/actions/admin-actions"
 
 export default async function AdminCrearRutinaPage() {
   const supabase = await createClient()
@@ -28,6 +29,9 @@ export default async function AdminCrearRutinaPage() {
 
   const athletes = profiles?.filter(p => p.role === 'deportista') || []
   const trainers = profiles?.filter(p => p.role === 'entrenador') || []
+
+  // Obtener catálogo de ejercicios
+  const { exercises: exerciseCatalog } = await getExerciseCatalog()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-gray-800">
@@ -83,6 +87,7 @@ export default async function AdminCrearRutinaPage() {
           trainers={trainers}
           isAdmin={true}
           creatorId={user.id}
+          exerciseCatalog={exerciseCatalog || []}
         />
       </main>
     </div>
