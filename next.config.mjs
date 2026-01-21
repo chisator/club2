@@ -2,8 +2,8 @@ import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   swcMinify: true,
   disable: process.env.NODE_ENV === "development",
@@ -15,7 +15,7 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // 1. ESTO ES VITAL PARA DOCKER
-  output: 'standalone', 
+  output: 'standalone',
 
   // 2. IMPORTANTE: Si usas <Image /> con fotos de Supabase, agrega esto:
   images: {
